@@ -1,0 +1,247 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-03T00:00:00Z",
+  "title": "Design System: Кто убил продажу?",
+  "extensions": {
+    "colorMeta": {
+      "ink-900": {
+        "role": "neutral",
+        "displayName": "Графитовый фон",
+        "canonical": "#0d1218",
+        "tonalRamp": ["#05070a", "#0d1218", "#161f2a", "#22303f", "#324454", "#4a5f71", "#6d8090", "#a9b7c2"]
+      },
+      "ink-800": {
+        "role": "neutral",
+        "displayName": "Приподнятая поверхность",
+        "canonical": "#101922",
+        "tonalRamp": ["#060a0e", "#101922", "#1a2733", "#273747", "#38495c", "#506478", "#748797", "#aebcc7"]
+      },
+      "ink-700": {
+        "role": "neutral",
+        "displayName": "Холодная синяя панель",
+        "canonical": "#15212d",
+        "tonalRamp": ["#080d12", "#15212d", "#1f303f", "#2c4154", "#3e5569", "#557085", "#7a93a5", "#b2c3d0"]
+      },
+      "ink-600": {
+        "role": "neutral",
+        "displayName": "Декоративная линия",
+        "canonical": "#1e2c3a",
+        "tonalRamp": ["#0b1119", "#1e2c3a", "#293c4e", "#375063", "#496478", "#5f7d92", "#849eaf", "#b8c9d5"]
+      },
+      "edge": {
+        "role": "neutral",
+        "displayName": "Граница интерактивного",
+        "canonical": "#405568",
+        "tonalRamp": ["#131c24", "#1f2c38", "#2c3d4c", "#405568", "#546e83", "#6f889d", "#93a8b9", "#c2d0da"]
+      },
+      "fog": {
+        "role": "neutral",
+        "displayName": "Второстепенный текст",
+        "canonical": "#8d9aa6",
+        "tonalRamp": ["#1a2028", "#2a333d", "#3d4954", "#54626f", "#6d7d8b", "#8d9aa6", "#adb8c1", "#d3dade"]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Почти белый текст",
+        "canonical": "#f2f4f5",
+        "tonalRamp": ["#202426", "#333739", "#4a4f52", "#65696d", "#82878a", "#a3a8ab", "#c8cccd", "#f2f4f5"]
+      },
+      "signal": {
+        "role": "primary",
+        "displayName": "Голубой сигнал",
+        "canonical": "#67d5ff",
+        "tonalRamp": ["#04222e", "#073446", "#0b4c68", "#10688e", "#1789b9", "#33aee0", "#67d5ff", "#bceaff"]
+      },
+      "evidence": {
+        "role": "secondary",
+        "displayName": "Жёлтая улика",
+        "canonical": "#e4d43a",
+        "tonalRamp": ["#241f04", "#3a3207", "#544a0b", "#726510", "#948318", "#b8a423", "#e4d43a", "#f4ec9e"]
+      },
+      "alarm": {
+        "role": "tertiary",
+        "displayName": "Красное обвинение",
+        "canonical": "#e44c4c",
+        "tonalRamp": ["#2b0b0b", "#421010", "#5d1717", "#7d2020", "#a02b2b", "#c53a3a", "#e44c4c", "#f5a6a6"]
+      }
+    },
+    "typographyMeta": {
+      "display-xl": { "displayName": "Обвинение", "purpose": "Ровно одно место: «Во всём виноват ты.» в первом вьюпорте." },
+      "display-lg": { "displayName": "Заголовок акта", "purpose": "Заголовки экранов и распадающаяся строка финала." },
+      "display-md": { "displayName": "Вывод и цена", "purpose": "Инсайт внутри потока и цена практикума; крупнее прозы, но не заголовок экрана." },
+      "body": { "displayName": "Проза дела", "purpose": "Читаемый текст и реплики; колонка не шире 34 символов." },
+      "body-strong": { "displayName": "Текст действия", "purpose": "Кнопки, имена подозреваемых, заголовки карточек." },
+      "body-small": { "displayName": "Подпись", "purpose": "Второстепенные строки под заголовком, тело карточки." },
+      "label": { "displayName": "Системная нотация дела", "purpose": "УЛИКА 02 / 03, РЫЧАГ 01 / 3, таймкоды, шаги пути, штампы. Номер несёт информацию." },
+      "hand": { "displayName": "Рукописный стикер", "purpose": "Только жёлтый стикер-улика — единственное бумажное пятно в цифровой среде." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.23, 1, 0.32, 1)", "purpose": "Отклик на нажатие и раскрытие, 160 мс." },
+      { "name": "ease-in-out", "value": "cubic-bezier(0.77, 0, 0.175, 1)", "purpose": "Сюжетный уход сообщения из чата, 350 мс, со сжатием по вертикали." },
+      { "name": "quick", "value": "duration 180ms; cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Смена состояния: выбор, раскрытие аккордеона." },
+      { "name": "spring", "value": "spring(stiffness 400, damping 32)", "purpose": "Появление элемента." },
+      { "name": "cascade", "value": "40ms * min(index, 5)", "purpose": "Каскад появления списка с потолком на шестом элементе." },
+      { "name": "press", "value": "scale(0.97)", "purpose": "Единственный отклик на касание; hover-состояний в системе нет." }
+    ],
+    "breakpoints": [
+      { "name": "target", "value": "360-430px (одна колонка, брейкпоинтов нет)" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Основная кнопка",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Главное действие шага; во всю ширину в липкой нижней панели.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Да, было такое</button>",
+      "css": ".ds-btn-primary { display: block; width: 100%; background: var(--signal, #67d5ff); color: var(--ink-900, #0d1218); border: none; border-radius: var(--r-card, 12px); padding: 16px 24px; font-family: var(--font-body, 'Onest Variable', system-ui, sans-serif); font-size: 1rem; font-weight: 500; text-align: center; cursor: pointer; transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), opacity 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:focus-visible { outline: 2px solid var(--signal, #67d5ff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Кнопка улики",
+      "kind": "button",
+      "refersTo": "button-evidence",
+      "description": "Покупка и разблокировка — единственные места жёлтой заливки среди действий.",
+      "html": "<button class=\"ds-btn-evidence\" type=\"button\">Забрать практикум</button>",
+      "css": ".ds-btn-evidence { display: block; width: 100%; background: var(--evidence, #e4d43a); color: var(--ink-900, #0d1218); border: none; border-radius: var(--r-card, 12px); padding: 16px 24px; font-family: var(--font-body, 'Onest Variable', system-ui, sans-serif); font-size: 1rem; font-weight: 500; text-align: center; cursor: pointer; transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-evidence:active { transform: scale(0.97); } .ds-btn-evidence:focus-visible { outline: 2px solid var(--signal, #67d5ff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Призрачная кнопка",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Второе действие; рамка --edge обязательна, иначе читается как строка текста.",
+      "html": "<button class=\"ds-btn-ghost\" type=\"button\">Посмотреть ещё раз</button>",
+      "css": ".ds-btn-ghost { display: block; width: 100%; background: var(--ink-800, #101922); color: var(--paper, #f2f4f5); border: 1px solid var(--edge, #405568); border-radius: var(--r-card, 12px); padding: 16px 24px; font-family: var(--font-body, 'Onest Variable', system-ui, sans-serif); font-size: 1rem; font-weight: 500; text-align: center; cursor: pointer; transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-ghost:active { transform: scale(0.97); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--signal, #67d5ff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Неактивная кнопка с подсказкой",
+      "kind": "button",
+      "refersTo": "button-disabled",
+      "description": "Пустая переменная сборки даёт непрозрачную неактивную кнопку и честную подпись, а не битую ссылку.",
+      "html": "<div class=\"ds-btn-disabled-wrap\"><button class=\"ds-btn-disabled\" type=\"button\" disabled>Оплатить практикум</button><p class=\"ds-btn-disabled-hint\">Ссылка на оплату ещё не подключена</p></div>",
+      "css": ".ds-btn-disabled-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; } .ds-btn-disabled { width: 100%; background: var(--ink-800, #101922); color: var(--fog, #8d9aa6); border: 1px solid var(--edge, #405568); border-radius: var(--r-card, 12px); padding: 16px 24px; font-family: var(--font-body, 'Onest Variable', system-ui, sans-serif); font-size: 1rem; font-weight: 500; text-align: center; cursor: not-allowed; } .ds-btn-disabled-hint { margin: 0; font-family: var(--font-body, 'Onest Variable', system-ui, sans-serif); font-size: 0.8125rem; color: var(--fog, #8d9aa6); }"
+    },
+    {
+      "name": "Вариант выбора",
+      "kind": "chip",
+      "refersTo": "choice",
+      "description": "Оценки не даются: выбранный вариант меняет и заливку, и линию с текстом на голубой.",
+      "html": "<div class=\"ds-choice-list\"><button class=\"ds-choice\" type=\"button\" role=\"radio\" aria-checked=\"false\">Клиент сам не знает, чего хочет</button><button class=\"ds-choice ds-choice--selected\" type=\"button\" role=\"radio\" aria-checked=\"true\">Заявки приходят не от тех людей</button></div>",
+      "css": ".ds-choice-list { display: flex; flex-direction: column; gap: 12px; } .ds-choice { width: 100%; text-align: left; background: var(--ink-800, #101922); color: var(--paper, #f2f4f5); border: 1px solid var(--edge, #405568); border-radius: var(--r-card, 12px); padding: 16px; font-family: var(--font-body, 'Onest Variable', system-ui, sans-serif); font-size: 1rem; line-height: 1.4; cursor: pointer; transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), background-color 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms cubic-bezier(0.16, 1, 0.3, 1), color 180ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-choice:active { transform: scale(0.97); } .ds-choice:focus-visible { outline: 2px solid var(--signal, #67d5ff); outline-offset: 2px; } .ds-choice--selected { background: color-mix(in srgb, var(--signal, #67d5ff) 16%, var(--ink-800, #101922)); border-color: var(--signal, #67d5ff); color: var(--signal, #67d5ff); }"
+    },
+    {
+      "name": "Системная метка дела",
+      "kind": "custom",
+      "refersTo": "system-label",
+      "description": "Грамматика мира: номер несёт информацию, какая из трёх версий проверяется сейчас.",
+      "html": "<p class=\"ds-system-label\">УЛИКА 02 / 03</p>",
+      "css": ".ds-system-label { margin: 0; font-family: var(--font-mono, 'JetBrains Mono Variable', ui-monospace, monospace); font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fog, #8d9aa6); }"
+    },
+    {
+      "name": "Карточка досье",
+      "kind": "card",
+      "refersTo": "card-dossier",
+      "description": "Аккордеон подозреваемого: заголовок нажимаем, поэтому рамка --edge; внутренний разделитель — волосяной --ink-600.",
+      "html": "<div class=\"ds-dossier\"><button class=\"ds-dossier-head\" type=\"button\" aria-expanded=\"true\"><span class=\"ds-dossier-title\"><span class=\"ds-dossier-name\">Федя</span><span class=\"ds-dossier-line\">Пришёл с поиска, ушёл через восемь секунд</span></span><svg class=\"ds-dossier-chevron\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M4 6l4 4 4-4\" stroke=\"currentColor\" stroke-width=\"1.5\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></button><div class=\"ds-dossier-body\"><p class=\"ds-dossier-field\">Запрос: «лендинг под ключ»</p></div></div>",
+      "css": ".ds-dossier { overflow: hidden; background: var(--ink-800, #101922); border: 1px solid var(--edge, #405568); border-radius: var(--r-card, 12px); } .ds-dossier-head { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; text-align: left; background: none; border: none; cursor: pointer; transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-dossier-head:active { transform: scale(0.97); } .ds-dossier-title { display: flex; flex-direction: column; gap: 4px; } .ds-dossier-name { font-family: var(--font-body, 'Onest Variable', system-ui, sans-serif); font-size: 1rem; font-weight: 500; color: var(--paper, #f2f4f5); } .ds-dossier-line { font-family: var(--font-body, 'Onest Variable', system-ui, sans-serif); font-size: 0.875rem; color: var(--fog, #8d9aa6); } .ds-dossier-chevron { width: 16px; height: 16px; flex-shrink: 0; color: var(--fog, #8d9aa6); transform: rotate(180deg); transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-dossier-body { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-top: 1px solid var(--ink-600, #1e2c3a); } .ds-dossier-field { margin: 0; font-family: var(--font-body, 'Onest Variable', system-ui, sans-serif); font-size: 0.875rem; color: var(--paper, #f2f4f5); }"
+    },
+    {
+      "name": "Стикер-улика",
+      "kind": "custom",
+      "refersTo": "sticker",
+      "description": "Единственное бумажное пятно в цифровой среде; поворот детерминирован индексом, не случаен.",
+      "html": "<div class=\"ds-sticker\">Продажа умерла не на сайте.</div>",
+      "css": ".ds-sticker { display: inline-block; background: var(--evidence, #e4d43a); color: var(--ink-900, #0d1218); border-radius: var(--r-card, 12px); padding: 12px 16px; font-family: var(--font-hand, 'Caveat Variable', cursive); font-size: 1.125rem; line-height: 1.375; transform: rotate(-2deg); }"
+    },
+    {
+      "name": "Штамп",
+      "kind": "custom",
+      "refersTo": "stamp",
+      "description": "Падает под углом при появлении: -8deg/1.25 -> -3deg/1.0 за 280 мс; при reduced-motion просто проявляется.",
+      "html": "<div class=\"ds-stamp\" role=\"status\">Улика найдена</div>",
+      "css": ".ds-stamp { display: inline-block; border: 1px solid var(--evidence, #e4d43a); color: var(--evidence, #e4d43a); border-radius: var(--r-label, 4px); padding: 8px 16px; font-family: var(--font-mono, 'JetBrains Mono Variable', ui-monospace, monospace); font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.08em; animation: ds-stamp-drop 280ms cubic-bezier(0.23, 1, 0.32, 1) both; } @keyframes ds-stamp-drop { from { opacity: 0; transform: rotate(-8deg) scale(1.25); } to { opacity: 1; transform: rotate(-3deg) scale(1); } } @media (prefers-reduced-motion: reduce) { .ds-stamp { animation: none; transform: none; } }"
+    },
+    {
+      "name": "Пузыри чата",
+      "kind": "custom",
+      "refersTo": "chat-bubble-client",
+      "description": "Две стороны диалога различаются только ступенью фона и выравниванием: без градиентов, теней и хвостиков.",
+      "html": "<div class=\"ds-chat\"><div class=\"ds-chat-row ds-chat-row--client\"><div class=\"ds-bubble ds-bubble--client\">Заявки опять мусорные. Ты вообще смотришь, что открутил?</div></div><div class=\"ds-chat-row ds-chat-row--vasya\"><div class=\"ds-bubble ds-bubble--vasya\">Сейчас посмотрю площадки.</div></div></div>",
+      "css": ".ds-chat { display: flex; flex-direction: column; gap: 12px; } .ds-chat-row { display: flex; } .ds-chat-row--client { justify-content: flex-start; } .ds-chat-row--vasya { justify-content: flex-end; } .ds-bubble { max-width: 80%; border-radius: var(--r-card, 12px); padding: 12px 16px; font-family: var(--font-body, 'Onest Variable', system-ui, sans-serif); font-size: 1rem; line-height: 1.55; color: var(--paper, #f2f4f5); } .ds-bubble--client { background: var(--ink-800, #101922); } .ds-bubble--vasya { background: var(--ink-700, #15212d); }"
+    },
+    {
+      "name": "Счётчик рычагов",
+      "kind": "nav",
+      "refersTo": "lever-meter",
+      "description": "Положение в деле: три деления, открытые — жёлтые, закрытые — волосяная линия. Прогресс-колец в системе нет.",
+      "html": "<div class=\"ds-meter\" role=\"meter\" aria-valuemin=\"0\" aria-valuemax=\"3\" aria-valuenow=\"2\"><span class=\"ds-meter-seg ds-meter-seg--on\"></span><span class=\"ds-meter-seg ds-meter-seg--on\"></span><span class=\"ds-meter-seg\"></span></div>",
+      "css": ".ds-meter { display: flex; gap: 8px; } .ds-meter-seg { height: 4px; flex: 1; border-radius: var(--r-chip, 999px); background: var(--ink-600, #1e2c3a); transition: background-color 200ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-meter-seg--on { background: var(--evidence, #e4d43a); }"
+    },
+    {
+      "name": "Слот видео",
+      "kind": "custom",
+      "refersTo": "video-slot",
+      "description": "Честная заглушка 16:9 без нерабочей кнопки play; никогда не блокирует прохождение.",
+      "html": "<div class=\"ds-video-slot\"><p class=\"ds-video-title\">Улика 01 / 03</p><p class=\"ds-video-hint\">Видео ещё не снято</p></div>",
+      "css": ".ds-video-slot { display: flex; aspect-ratio: 16 / 9; width: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; background: var(--ink-800, #101922); border: 1px solid var(--ink-600, #1e2c3a); border-radius: var(--r-card, 12px); padding: 0 20px; } .ds-video-title { margin: 0; font-family: var(--font-mono, 'JetBrains Mono Variable', ui-monospace, monospace); text-transform: uppercase; letter-spacing: 0.05em; color: var(--paper, #f2f4f5); } .ds-video-hint { margin: 0; font-family: var(--font-mono, 'JetBrains Mono Variable', ui-monospace, monospace); color: var(--fog, #8d9aa6); }"
+    },
+    {
+      "name": "Липкая нижняя панель",
+      "kind": "nav",
+      "refersTo": "bottom-bar",
+      "description": "Единственное действие экрана во всю ширину; фон совпадает с фоном экрана, отделяет одна линия — ни блюра, ни тени.",
+      "html": "<div class=\"ds-bottom-bar\"><button class=\"ds-btn-primary\" type=\"button\">Дальше</button></div>",
+      "css": ".ds-bottom-bar { position: sticky; bottom: 0; z-index: 10; margin-top: auto; display: flex; flex-direction: column; gap: 12px; background: var(--ink-900, #0d1218); border-top: 1px solid var(--ink-600, #1e2c3a); padding: 16px 20px max(16px, env(safe-area-inset-bottom)); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Материалы дела на телефоне в темноте",
+    "overview": "Мир собран как папка с уликами, открытая вечером в тёмном чате, а не как курс. Здесь нет ни одного элемента, который сообщает «сейчас будет урок»: вместо надзаголовков — системная нотация дела (УЛИКА 02 / 03, ДЕЛО ОТКРЫТО), вместо иллюстраций — сцена комнаты с человеком со спины, вместо прогресс-колец — три деления счётчика рычагов. Поверхность работает в режиме уговора, но операционные участки (выбор, аккордеон, сборка связки) выигрывают у выразительности каждый раз, когда они спорят.\n\nМатериал — графит и холодная синь, три ступени фона (ink-900 -> ink-800 -> ink-700) и волосяные линии. Теней нет вообще, и это не экономия, а материал: глубина строится сменой тона поверхности и границей, поэтому мир остаётся узнаваемым на выключенном тексте. Цвет держится на строгом пайке: три акцента, у каждого одна работа — голубой это вывод, жёлтый это найденная улика, красный это обвинение. Единственное «бумажное» пятно в цифровой среде — жёлтый стикер рукописным начертанием, повёрнутый на пару градусов.\n\nТёмная тема здесь принудительна и не наследует тему клиента Telegram: сцена продукта — телефон в руке вечером, светлый экран был бы вспышкой в лицо. Цель — 360–430px, одна колонка, горизонтальной прокрутки нет нигде.",
+    "keyCharacteristics": [
+      "Тёмная тема, зафиксированная в коде (color-scheme: dark), а не унаследованная от клиента.",
+      "Ни одной тени во всей системе; глубина — слои фона плюс граница в 1px.",
+      "Три акцента с непересекающимися ролями и жёстко нормированный красный.",
+      "Четыре гарнитуры с разделением труда: гротеск-обвинение, моно-нотация, текстовый гротеск, рукописный стикер.",
+      "Мобильная одноколоночная сетка с шагом 4px и полями 20px.",
+      "Движение служебное: пружина на появление, 160–200 мс на смену состояния, active:scale(0.97) вместо hover."
+    ],
+    "rules": [
+      { "name": "Правило двух границ", "body": "Граница неинтерактивного блока — ink-600, граница всего нажимаемого — edge. ink-600 даёт 1.32:1 к фону: на телефоне вечером это не линия, а её отсутствие, и мишень для пальца им не обводится никогда. Тест: если у элемента есть onClick, у него не может быть рамки ink-600.", "section": "colors" },
+      { "name": "Правило нормированного красного", "body": "Красный появляется ровно пять раз за всю воронку: обвинение в прологе, мысль Васи на мосту после «Сайт трогать не надо», штамп на разборе скользкого оффера, надпись «ЛОГИКА ПОТЕРЯНА» в механике разрыва связки, распадающееся обвинение в финале. Шестого места нет; чтобы добавить красный, нужно сначала отнять его у одного из пяти.", "section": "colors" },
+      { "name": "Правило одной работы", "body": "У каждого акцента одна семантика на весь проект: голубой — вывод, жёлтый — улика, красный — обвинение. Акцент не берётся «чтобы было ярче»: если непонятно, какая из трёх работ выполняется, элемент остаётся нейтральным.", "section": "colors" },
+      { "name": "Правило заливки и линии", "body": "Состояние выбора меняет и заливку, и цвет линии с текстом. Заливка выбранного варианта — color-mix(in srgb, var(--signal) 16%, var(--ink-800)): только смена цвета линии читается на телефоне как оттенок, а не как пятно.", "section": "colors" },
+      { "name": "Правило нотации", "body": "Моноширинная метка — грамматика мира, а не декоративный надзаголовок: номер обязан нести информацию (какая из трёх версий проверяется сейчас, какой рычаг открыт). Метка без номера или с выдуманным номером — декорация, и её здесь не бывает.", "section": "typography" },
+      { "name": "Правило акцента весом", "body": "Крупный текст акцентируется размером, весом и цветом токена — никогда градиентной заливкой текста, тенью текста или обводкой.", "section": "typography" },
+      { "name": "Правило рукописного", "body": "Caveat живёт только на жёлтом стикере. Это единственное «бумажное» пятно в цифровой среде; вторая рукописная поверхность обесценивает первую.", "section": "typography" },
+      { "name": "Правило одного действия внизу", "body": "Главное действие экрана живёт в липкой нижней панели во всю ширину, а шаг назад — системная кнопка Telegram BackButton, не UI-кнопка. Своей стрелки «назад» в интерфейсе нет.", "section": "layout" },
+      { "name": "Правило заслоённой базы", "body": "Базовые правила (reset, элементы, фокус) объявляются внутри @layer base. Незаслоённый CSS по спецификации побеждает любой заслоённый утилитарный класс: без обёртки px-*/py-* схлопывались в 0px, а сброс button { background: none; border: none } гасил заливку и рамку каждой кнопки.", "section": "layout" },
+      { "name": "Правило отсутствующей тени", "body": "box-shadow в интерфейсе не используется никогда. Нужна отдельность объекта — берётся следующая ступень фона; нужна граница — берётся edge или ink-600; нужен отклик — берётся active:scale(0.97).", "section": "elevation" },
+      { "name": "Правило непрозрачного неактивного", "body": "Неактивное состояние — отдельная непрозрачная палитра (ink-800 + edge + fog), а не тот же вариант под opacity. Прозрачность гасит заливку вместе с текстом и границей, и от кнопки не остаётся формы.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do обводить всё нажимаемое токеном edge, а ink-600 оставлять разделителям и рамкам неинтерактивных блоков.",
+      "Do строить глубину ступенями фона ink-900 -> ink-800 -> ink-700 и одной линией в 1px.",
+      "Do менять при выборе и заливку, и цвет линии с текстом — иначе на телефоне разница читается как оттенок.",
+      "Do нумеровать системные метки содержательно (УЛИКА 02 / 03, РЫЧАГ 01 / 3): номер обязан нести информацию.",
+      "Do делать неактивное состояние отдельной непрозрачной палитрой с честной подсказкой под кнопкой, а не варианта под opacity.",
+      "Do держать главное действие в липкой нижней панели во всю ширину, а шаг назад отдавать системной кнопке Telegram.",
+      "Do держать прозу в колонке не шире 34 символов при интерлиньяже 1.55.",
+      "Do делать любой поворот и разлёт детерминированными от индекса — одинаковый вход даёт одинаковый кадр при каждом возврате на экран.",
+      "Do заворачивать базовые правила в @layer base, иначе незаслоённый CSS перебивает утилиты.",
+      "Do отключать декоративное движение при prefers-reduced-motion, сохраняя порядок и тайминг сюжетных сцен."
+    ],
+    "donts": [
+      "Don't добавлять box-shadow куда бы то ни было в интерфейсе.",
+      "Don't брать шестое место для красного: их ровно пять, и новое место открывается только за счёт старого.",
+      "Don't смешивать роли акцентов — голубой не «просто яркий», жёлтый не «просто тёплый».",
+      "Don't ставить hover-состояния: среда сенсорная, отклик — active:scale(0.97).",
+      "Don't заливать текст градиентом, вешать на него тень или обводку — акцент только весом, размером и цветом токена.",
+      "Don't вводить прогресс-кольца и проценты: положение в деле показывают моноширинная метка и три деления счётчика.",
+      "Don't оценивать выбор пользователя цветом, галочкой или значком «верно/неверно».",
+      "Don't заводить четвёртый радиус: 4px, 12px, 999px и ничего между.",
+      "Don't хардкодить hex вне tokens.css и не наследовать тему клиента Telegram — тема принудительно тёмная.",
+      "Don't рисовать нерабочие элементы управления в слотах отсутствующего материала и не блокировать ими прохождение.",
+      "Don't ставить рукописное начертание нигде, кроме жёлтого стикера."
+    ]
+  }
+}

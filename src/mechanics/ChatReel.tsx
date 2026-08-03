@@ -33,6 +33,10 @@ interface VisibleMessage {
   text: string;
   author: ChatMessage['author'];
   phase: 'in' | 'out';
+  /** Только самое первое сообщение реела, засеянное `seedFirstMessage` —
+   *  монтируется сразу в конечной непрозрачности (ChatBubble state="seed"),
+   *  а не гаснет из invisible, как все остальные (SPEC.md §4, экран 0). */
+  seed: boolean;
 }
 
 /** Индекс начала забега подряд идущих burst-сообщений, содержащего index —
@@ -79,7 +83,7 @@ function burstRunStart(messages: ChatMessage[], index: number): number {
 function seedFirstMessage(messages: ChatMessage[]): VisibleMessage[] {
   const first = messages[0];
   if (!first) return [];
-  return [{ id: first.id, text: first.text, author: first.author, phase: 'in' }];
+  return [{ id: first.id, text: first.text, author: first.author, phase: 'in', seed: true }];
 }
 
 export function ChatReel({ messages, onDone, skippable = true }: ChatReelProps): JSX.Element {
@@ -128,7 +132,10 @@ export function ChatReel({ messages, onDone, skippable = true }: ChatReelProps):
 
       if (message.behavior === 'delete') {
         if (!skipAdd) {
-          setVisible((v) => [...v, { id: message.id, text: message.text, author: message.author, phase: 'in' }]);
+          setVisible((v) => [
+            ...v,
+            { id: message.id, text: message.text, author: message.author, phase: 'in', seed: false },
+          ]);
         }
         schedule(() => {
           setVisible((v) => v.map((item) => (item.id === message.id ? { ...item, phase: 'out' } : item)));
@@ -142,7 +149,10 @@ export function ChatReel({ messages, onDone, skippable = true }: ChatReelProps):
 
       if (message.behavior === 'burst') {
         if (!skipAdd) {
-          setVisible((v) => [...v, { id: message.id, text: message.text, author: message.author, phase: 'in' }]);
+          setVisible((v) => [
+            ...v,
+            { id: message.id, text: message.text, author: message.author, phase: 'in', seed: false },
+          ]);
         }
         const isLastOfRun = messages[index + 1]?.behavior !== 'burst';
         if (!isLastOfRun) {
@@ -163,7 +173,10 @@ export function ChatReel({ messages, onDone, skippable = true }: ChatReelProps):
 
       // hold — появляется и остаётся, реел идёт дальше без удаления.
       if (!skipAdd) {
-        setVisible((v) => [...v, { id: message.id, text: message.text, author: message.author, phase: 'in' }]);
+        setVisible((v) => [
+          ...v,
+          { id: message.id, text: message.text, author: message.author, phase: 'in', seed: false },
+        ]);
       }
       schedule(() => step(index + 1), CHAT_REEL_TIMING.show);
     }
@@ -189,7 +202,11 @@ export function ChatReel({ messages, onDone, skippable = true }: ChatReelProps):
       className="flex min-h-[360px] flex-1 flex-col justify-end gap-3 py-2"
     >
       {visible.map((item) => (
-        <ChatBubble key={item.id} author={item.author} state={item.phase === 'out' ? 'out' : 'in'}>
+        <ChatBubble
+          key={item.id}
+          author={item.author}
+          state={item.phase === 'out' ? 'out' : item.seed ? 'seed' : 'in'}
+        >
           {item.text}
         </ChatBubble>
       ))}
