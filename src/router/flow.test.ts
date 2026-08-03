@@ -2,37 +2,27 @@ import { describe, expect, it } from 'vitest';
 import { FLOW, stepIndex, type StepId } from './flow';
 import { REGISTRY } from './registry';
 
-// Дословно из SPEC.md §3 — порядок и полный список 24 id.
+// Дословно из SPEC.md §3 — порядок и полный список 14 id.
 const EXPECTED_ORDER: StepId[] = [
   'prologue-chat',
-  'case-open',
-  'vasya-intro',
-  'verdict-first',
-  'who-is-vasya',
-  'wants',
-  'clue1-video',
-  'clue1-suspects',
-  'clue1-debrief',
-  'clue1-unlock',
-  'bridge-1',
-  'clue2-video',
-  'clue2-slippery',
-  'clue2-debrief',
-  'clue2-unlock',
-  'bridge-2',
-  'clue3-video',
-  'clue3-split',
-  'clue3-rebuild',
-  'clue3-found',
-  'final-chat',
-  'final-strike',
-  'verdict-second',
+  'who-you-are',
+  'v1-part1',
+  'cast-choice',
+  'v1-part2',
+  'unlock-audience',
+  'empty-site',
+  'v2',
+  'unlock-offer',
+  'quiz',
+  'link-break',
+  'v3',
   'offer',
+  'autoseller',
 ];
 
 describe('FLOW', () => {
-  it('содержит ровно 24 шага', () => {
-    expect(FLOW.length).toBe(24);
+  it('содержит ровно 14 шагов', () => {
+    expect(FLOW.length).toBe(14);
   });
 
   it('идентификаторы уникальны', () => {
@@ -45,8 +35,14 @@ describe('FLOW', () => {
 
   it('stepIndex возвращает индекс, согласованный с порядком FLOW', () => {
     expect(stepIndex('prologue-chat')).toBe(0);
-    expect(stepIndex('wants')).toBe(5);
-    expect(stepIndex('offer')).toBe(23);
+    expect(stepIndex('unlock-audience')).toBe(5);
+    expect(stepIndex('empty-site')).toBe(6);
+    expect(stepIndex('autoseller')).toBe(13);
+  });
+
+  it('stepIndex бросает на StepId, отсутствующем в FLOW', () => {
+    // @ts-expect-error — намеренно передаём id за пределами типа StepId
+    expect(() => stepIndex('not-a-step')).toThrow();
   });
 });
 
@@ -57,7 +53,11 @@ describe('REGISTRY', () => {
     }
   });
 
-  it('содержит ровно 24 записи — не больше и не меньше', () => {
-    expect(Object.keys(REGISTRY).length).toBe(24);
+  it('содержит ровно 14 записей — не больше и не меньше', () => {
+    expect(Object.keys(REGISTRY).length).toBe(14);
+  });
+
+  it('акты не пересекаются: A владеет 0..5, B владеет 6..13', () => {
+    expect(REGISTRY[FLOW[5]]).not.toBe(REGISTRY[FLOW[6]]);
   });
 });

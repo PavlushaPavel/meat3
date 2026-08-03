@@ -22,3 +22,19 @@ if (typeof window.matchMedia !== 'function') {
       dispatchEvent: () => false,
     }) as MediaQueryList;
 }
+
+/**
+ * jsdom не реализует `Element.prototype.scrollTo` (известный пробел, как и
+ * `matchMedia` выше) — его вызывает `ChatFrame` (src/ui/chat/ChatFrame.tsx)
+ * при каждом новом сообщении ленты, чтобы держать прокрутку у нижнего края.
+ * Без полифилла любой тест, монтирующий `ChatFrame`/`ChatReel`/экран 0 или
+ * автопродавца (экран 13, тоже на `ChatFrame`), падает с
+ * `TypeError: node.scrollTo is not a function` — это ограничение среды, а
+ * не баг компонента, поэтому чинится здесь же, а не обходом в прикладном
+ * коде.
+ */
+if (typeof Element.prototype.scrollTo !== 'function') {
+  Element.prototype.scrollTo = function scrollTo(): void {
+    // no-op — реальная прокрутка не нужна в jsdom, важно только не бросать.
+  };
+}

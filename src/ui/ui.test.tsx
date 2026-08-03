@@ -1,183 +1,207 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { Button } from './Button';
-import { LeverMeter } from './LeverMeter';
 import { Choice } from './Choice';
-import { ChoiceList } from './ChoiceList';
-import { DossierCard } from './DossierCard';
-import { Sticker } from './Sticker';
-import { VasyaScene } from '../scene/VasyaScene';
-
-// Полифилл window.matchMedia (нужен useReducedMotion() внутри Stamp/
-// DossierCard/VasyaScene/ChatBubble) подключён один раз глобально —
-// см. src/test/setup.ts и test.setupFiles в vite.config.ts.
+import { HazardStripe } from './HazardStripe';
+import { BatchLabel } from './BatchLabel';
+import { ArsenalBar } from './ArsenalBar';
+import { LifeMeter } from './LifeMeter';
+import { CodeInput } from './CodeInput';
+import { SiteMock } from './SiteMock';
+import { ChatHeader } from './chat/ChatHeader';
+import { ChatMessage } from './chat/ChatMessage';
+import { ChatComposer } from './chat/ChatComposer';
 
 afterEach(() => {
   cleanup();
 });
 
+describe('CodeInput', () => {
+  it('принимает слово с пробелами по краям', () => {
+    const onSolved = vi.fn();
+    render(<CodeInput expected="ФОРМУЛА" onSolved={onSolved} />);
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: ' формула ' } });
+    expect(onSolved).toHaveBeenCalledTimes(1);
+  });
+
+  it('принимает слово в другом регистре', () => {
+    const onSolved = vi.fn();
+    render(<CodeInput expected="формула" onSolved={onSolved} />);
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'ФоРмУлА' } });
+    expect(onSolved).toHaveBeenCalledTimes(1);
+  });
+
+  it('отвергает неверное слово и не блокируется — верное после ошибки всё равно проходит', () => {
+    const onSolved = vi.fn();
+    render(<CodeInput expected="формула" onSolved={onSolved} error="Не то слово." />);
+    const input = screen.getByRole('textbox');
+
+    fireEvent.change(input, { target: { value: 'офер' } });
+    fireEvent.blur(input);
+    expect(onSolved).not.toHaveBeenCalled();
+    expect(screen.getByText('Не то слово.')).not.toBeNull();
+
+    fireEvent.change(input, { target: { value: 'формула' } });
+    expect(onSolved).toHaveBeenCalledTimes(1);
+  });
+
+  it('не вызывает onSolved повторно после решения', () => {
+    const onSolved = vi.fn();
+    render(<CodeInput expected="формула" onSolved={onSolved} />);
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'формула' } });
+    fireEvent.change(input, { target: { value: 'формула' } });
+    fireEvent.blur(input);
+    expect(onSolved).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('LifeMeter', () => {
+  it('lives={1} рендерит одно живое деление из трёх', () => {
+    const { container } = render(<LifeMeter lives={1} total={3} />);
+    const segments = container.querySelectorAll('[data-alive]');
+    expect(segments).toHaveLength(3);
+    const alive = container.querySelectorAll('[data-alive="true"]');
+    expect(alive).toHaveLength(1);
+  });
+
+  it('lives={3} рендерит три живых деления', () => {
+    const { container } = render(<LifeMeter lives={3} total={3} />);
+    expect(container.querySelectorAll('[data-alive="true"]')).toHaveLength(3);
+  });
+});
+
 describe('Button', () => {
-  it('disabled: не вызывает onClick по клику', () => {
+  it('disabled не вызывает onClick', () => {
     const onClick = vi.fn();
-    const { getByRole } = render(
-      <Button onClick={onClick} disabled hint="Ссылка появится здесь">
-        Забрать ассистента
+    render(
+      <Button onClick={onClick} disabled>
+        Дальше
       </Button>
     );
-
-    fireEvent.click(getByRole('button'));
-
+    fireEvent.click(screen.getByRole('button'));
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  it('disabled: показывает hint цветом --fog', () => {
-    const { getByText } = render(
-      <Button disabled hint="Ссылка появится здесь">
-        Забрать ассистента
-      </Button>
-    );
-
-    expect(getByText('Ссылка появится здесь').className).toContain('text-fog');
-  });
-
-  it('включена: вызывает onClick ровно один раз на клик', () => {
+  it('активная кнопка вызывает onClick', () => {
     const onClick = vi.fn();
-    const { getByRole } = render(<Button onClick={onClick}>Дальше</Button>);
-
-    fireEvent.click(getByRole('button'));
-
+    render(<Button onClick={onClick}>Дальше</Button>);
+    fireEvent.click(screen.getByRole('button'));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
-});
 
-describe('LeverMeter', () => {
-  it('opened={2} рендерит ровно два жёлтых деления из трёх', () => {
-    const { container } = render(<LeverMeter opened={2} />);
-
-    const filled = container.querySelectorAll('[data-filled="true"]');
-    const all = container.querySelectorAll('[data-filled]');
-
-    expect(filled.length).toBe(2);
-    expect(all.length).toBe(3);
-  });
-
-  it('opened={0} не рендерит ни одного жёлтого деления', () => {
-    const { container } = render(<LeverMeter opened={0} />);
-
-    expect(container.querySelectorAll('[data-filled="true"]').length).toBe(0);
+  it('disabled отличается от ghost формой границы (пунктир против сплошной)', () => {
+    render(
+      <>
+        <Button variant="ghost">Ghost</Button>
+        <Button disabled>Disabled</Button>
+      </>
+    );
+    const [ghost, disabled] = screen.getAllByRole('button');
+    expect(ghost.className).not.toContain('border-dashed');
+    expect(disabled.className).toContain('border-dashed');
   });
 });
 
-describe('Choice / ChoiceList', () => {
-  it('клик по варианту вызывает onChange с его id', () => {
-    const onChange = vi.fn();
-    const { getByText } = render(
-      <ChoiceList
-        options={[
-          { id: 'a', label: 'Вариант А' },
-          { id: 'b', label: 'Вариант Б' },
-        ]}
-        value={null as unknown as string}
-        onChange={onChange}
+describe('Choice', () => {
+  it('вызывает onSelect при нажатии', () => {
+    const onSelect = vi.fn();
+    render(<Choice label="Яндекс Директ" selected={false} onSelect={onSelect} />);
+    fireEvent.click(screen.getByRole('radio'));
+    expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('HazardStripe', () => {
+  it('рендерит полосу заданной высоты', () => {
+    const { container } = render(<HazardStripe height={16} />);
+    const stripe = container.firstElementChild as HTMLElement;
+    expect(stripe.style.height).toBe('16px');
+  });
+});
+
+describe('BatchLabel', () => {
+  it('рендерит переданный текст', () => {
+    render(<BatchLabel tone="lab">ТВОЙ ВЫБОР ЗАФИКСИРОВАН</BatchLabel>);
+    expect(screen.getByText('ТВОЙ ВЫБОР ЗАФИКСИРОВАН')).not.toBeNull();
+  });
+});
+
+describe('ArsenalBar', () => {
+  it('рендерит count делений заполненными из total', () => {
+    const { container } = render(<ArsenalBar count={1} total={2} tool="Яндекс Директ" />);
+    expect(screen.getByText('Яндекс Директ')).not.toBeNull();
+    expect(container.querySelectorAll('.bg-toxic')).toHaveLength(1);
+  });
+});
+
+describe('SiteMock', () => {
+  it('рендерит заголовок и список преимуществ как текст, а не как Choice', () => {
+    render(
+      <SiteMock
+        headline="Ремонт под ключ"
+        bullets={['Высокое качество', 'Индивидуальный подход']}
+        chrome="site.ru"
       />
     );
-
-    fireEvent.click(getByText('Вариант Б'));
-
-    expect(onChange).toHaveBeenCalledWith('b');
-  });
-
-  it('выбранный вариант не получает индикации правильности — только aria-checked', () => {
-    const { getByRole } = render(<Choice label="Вариант А" selected onSelect={() => {}} />);
-
-    const option = getByRole('radio');
-    expect(option.getAttribute('aria-checked')).toBe('true');
-    expect(option.className).toContain('border-signal');
-  });
-
-  it('multi: value — массив, isSelected проверяет вхождение', () => {
-    const { getByRole } = render(
-      <ChoiceList
-        options={[{ id: 'x', label: 'Хочу больше денег' }]}
-        value={['x']}
-        onChange={() => {}}
-        multi
-      />
-    );
-
-    expect(getByRole('checkbox').getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByText('Ремонт под ключ')).not.toBeNull();
+    expect(screen.getByText('Высокое качество')).not.toBeNull();
+    // Пункты не должны быть радиокнопками/чекбоксами выбора — это макет сайта, не варианты ответа.
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
   });
 });
 
-describe('DossierCard', () => {
-  it('open=false: содержимое не рендерится', () => {
-    const { queryByText } = render(
-      <DossierCard name="Федя" line="квартира под реновацию" open={false} onToggle={() => {}}>
-        <p>Готовность: нулевая.</p>
-      </DossierCard>
-    );
-
-    expect(queryByText('Готовность: нулевая.')).toBeNull();
+describe('chat/ChatHeader', () => {
+  it('показывает инициал имени, имя и статус вместо подписи, когда статус задан', () => {
+    render(<ChatHeader name="Алексей" subtitle="клиент" status="печатает..." />);
+    expect(screen.getByText('Алексей')).not.toBeNull();
+    expect(screen.getByText('печатает...')).not.toBeNull();
+    expect(screen.queryByText('клиент')).toBeNull();
+    expect(screen.getByText('А')).not.toBeNull();
   });
 
-  it('open=true: содержимое рендерится', () => {
-    const { queryByText } = render(
-      <DossierCard name="Федя" line="квартира под реновацию" open onToggle={() => {}}>
-        <p>Готовность: нулевая.</p>
-      </DossierCard>
-    );
-
-    expect(queryByText('Готовность: нулевая.')).not.toBeNull();
-  });
-
-  it('клик по заголовку вызывает onToggle', () => {
-    const onToggle = vi.fn();
-    const { getByRole } = render(<DossierCard name="Илья" line="новостройка" open={false} onToggle={onToggle} />);
-
-    fireEvent.click(getByRole('button'));
-
-    expect(onToggle).toHaveBeenCalledTimes(1);
+  it('без статуса показывает подпись', () => {
+    render(<ChatHeader name="Алексей" subtitle="клиент" />);
+    expect(screen.getByText('клиент')).not.toBeNull();
   });
 });
 
-describe('Sticker', () => {
-  it('поворот детерминирован от index — не меняется между рендерами', () => {
-    const { container: first } = render(<Sticker index={2}>Улика</Sticker>);
-    const { container: second } = render(<Sticker index={2}>Улика</Sticker>);
-
-    const firstTransform = (first.firstChild as HTMLElement).style.transform;
-    const secondTransform = (second.firstChild as HTMLElement).style.transform;
-
-    expect(firstTransform).toBe(secondTransform);
-    expect(firstTransform).toBe('rotate(0deg)');
+describe('chat/ChatMessage', () => {
+  it('рендерит текст и время, без каких-либо галочек прочтения', () => {
+    const { container } = render(
+      <ChatMessage text="Лиды холодные." time="21:04" side="in" />
+    );
+    expect(screen.getByText('21:04')).not.toBeNull();
+    expect(container.textContent).toContain('Лиды холодные.');
+    // Ни в разметке, ни в тексте нет признаков галочек прочтения.
+    expect(container.querySelector('[data-read]')).toBeNull();
   });
 
-  it('разные index дают разный поворот', () => {
-    const { container } = render(<Sticker index={0}>А</Sticker>);
-    expect((container.firstChild as HTMLElement).style.transform).toBe('rotate(-2deg)');
+  it('tone="alarm" остаётся пузырём с временем — красятся только текст и размер, не оформление', () => {
+    const { container } = render(
+      <ChatMessage text="Во всём виноват ты." time="21:11" side="in" size="lg" tone="alarm" />
+    );
+    expect(container.querySelector('.bg-ink-700')).not.toBeNull();
+    expect(container.querySelector('.text-alarm')).not.toBeNull();
+    expect(screen.getByText('21:11')).not.toBeNull();
   });
 });
 
-describe('VasyaScene', () => {
-  it('с frameSrc рендерит <img>', () => {
-    const { container } = render(<VasyaScene variant="control" frameSrc="/frames/control.jpg" />);
-
-    const img = container.querySelector('img');
-    expect(img).not.toBeNull();
-    expect(img?.getAttribute('src')).toBe('/frames/control.jpg');
+describe('chat/ChatComposer', () => {
+  it('рендерит плейсхолдер и не содержит ни одного интерактивного элемента', () => {
+    render(<ChatComposer placeholder="Сообщение" />);
+    expect(screen.getByText('Сообщение')).not.toBeNull();
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    expect(screen.queryAllByRole('textbox')).toHaveLength(0);
   });
 
-  it('без frameSrc не рендерит <img>', () => {
-    const { container } = render(<VasyaScene variant="control" />);
-
-    expect(container.querySelector('img')).toBeNull();
-  });
-
-  it('без frameSrc рендерит SVG-силуэт для каждого из четырёх вариантов', () => {
-    (['defeated', 'searching', 'assembling', 'control'] as const).forEach((variant) => {
-      const { container, unmount } = render(<VasyaScene variant={variant} />);
-      expect(container.querySelector('svg')).not.toBeNull();
-      unmount();
-    });
+  it('декоративна: скрыта от вспомогательных технологий и не перехватывает тап', () => {
+    const { container } = render(<ChatComposer placeholder="Сообщение" />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.getAttribute('aria-hidden')).toBe('true');
+    expect(root.className).toContain('pointer-events-none');
   });
 });

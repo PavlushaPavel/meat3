@@ -49,7 +49,8 @@ jobs:
         env:
           # Переменные сборки. Пустые значения безопасны: приложение показывает
           # честные заглушки вместо падения (SPEC.md §5).
-          VITE_VIDEO_1_URL: ${{ vars.VITE_VIDEO_1_URL }}
+          VITE_VIDEO_1A_URL: ${{ vars.VITE_VIDEO_1A_URL }}
+          VITE_VIDEO_1B_URL: ${{ vars.VITE_VIDEO_1B_URL }}
           VITE_VIDEO_2_URL: ${{ vars.VITE_VIDEO_2_URL }}
           VITE_VIDEO_3_URL: ${{ vars.VITE_VIDEO_3_URL }}
           VITE_ASSISTANT_AUDIENCE_URL: ${{ vars.VITE_ASSISTANT_AUDIENCE_URL }}

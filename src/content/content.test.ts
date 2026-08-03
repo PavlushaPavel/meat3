@@ -1,224 +1,297 @@
 import { describe, expect, it } from 'vitest';
-import { CANONICAL_AD_TEXT, CLUE2_SLIPPERY, CLUE3_REBUILD, CLUE3_SPLIT, CLUES, VIDEOS } from './clues';
-import { FINAL_DIRECTIONS } from './final';
-import { SUSPECTS } from './suspects';
-import { pickEnding, VERDICT_FIRST, VERDICT_SECOND } from './verdicts';
-import { WANTS, WHO_IS_VASYA_CARDS } from './vasya';
+import { prologueContent } from './prologue';
+import { whoYouAreContent } from './who';
+import { videoScreens } from './videos';
+import { castChoiceContent } from './cast';
+import { unlockAudienceContent, unlockOfferContent, unlockContents } from './unlocks';
+import { emptySiteContent } from './site';
+import { quizContent } from './quiz';
+import { linkBreakContent } from './linkbreak';
+import { offerContent } from './offer';
+import { autosellerContent } from './autoseller';
 
-/** Уникальность id внутри коллекции — критично: id попадают в localStorage
- *  (SPEC.md §6), совпадение сделало бы выбор неотличимым. */
-function idsOf(items: ReadonlyArray<{ id: string }>): string[] {
-  return items.map((item) => item.id);
-}
-
-function expectUniqueIds(items: ReadonlyArray<{ id: string }>): void {
-  const ids = idsOf(items);
-  expect(new Set(ids).size).toBe(ids.length);
-}
-
-/** Непустота каждого строкового поля объекта — express-проверка от «брака»
- *  вида expect(x).toBeDefined(), которая пропускает пустые строки. */
-function expectNonEmptyStrings(record: object): void {
-  for (const [key, value] of Object.entries(record)) {
-    if (typeof value === 'string') {
-      expect(value.length, `поле "${key}" пустое`).toBeGreaterThan(0);
+/**
+ * Рекурсивно проверяет, что каждая строка внутри значения не пуста и не
+ * состоит только из пробелов (docs/PLAN.md «Задача 3»: «непустота каждого
+ * текстового поля у каждого элемента»). Числа/булевы проходят молча —
+ * проверяем только текст.
+ */
+function assertDeepNonEmptyStrings(value: unknown, path: string): void {
+  if (typeof value === 'string') {
+    expect(value.trim().length, `пустая строка: ${path}`).toBeGreaterThan(0);
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, i) => assertDeepNonEmptyStrings(item, `${path}[${i}]`));
+    return;
+  }
+  if (value !== null && typeof value === 'object') {
+    for (const [key, val] of Object.entries(value)) {
+      assertDeepNonEmptyStrings(val, `${path}.${key}`);
     }
   }
 }
 
-describe('SUSPECTS (экраны 7 и 8)', () => {
-  it('ровно пять подозреваемых', () => {
-    expect(SUSPECTS).toHaveLength(5);
+function idsOf<T extends { id: string }>(items: T[]): string[] {
+  return items.map((item) => item.id);
+}
+
+describe('непустота текста во всём контент-слое', () => {
+  const modules: Record<string, unknown> = {
+    prologueContent,
+    whoYouAreContent,
+    videoScreens,
+    castChoiceContent,
+    unlockAudienceContent,
+    unlockOfferContent,
+    emptySiteContent,
+    quizContent,
+    linkBreakContent,
+    offerContent,
+    autosellerContent,
+  };
+
+  for (const [name, value] of Object.entries(modules)) {
+    it(`${name}: ни одной пустой строки`, () => {
+      assertDeepNonEmptyStrings(value, name);
+    });
+  }
+});
+
+describe('prologueContent — экран 0 (SPEC.md §4)', () => {
+  it('ровно 13 сообщений', () => {
+    expect(prologueContent.messages).toHaveLength(13);
   });
 
-  it('уникальные id', () => {
-    expectUniqueIds(SUSPECTS);
+  it('id сообщений уникальны', () => {
+    expect(new Set(idsOf(prologueContent.messages)).size).toBe(13);
   });
 
-  it('у каждого непустые name/line/situation/reason/blocker/readiness', () => {
-    for (const suspect of SUSPECTS) {
-      expectNonEmptyStrings(suspect);
+  it('первые шесть сообщений имеют интервал 900 мс', () => {
+    for (const msg of prologueContent.messages.slice(0, 6)) {
+      expect(msg.delayMs).toBe(900);
     }
   });
 
-  it('ровно один подозреваемый с tone "alarm" — Федя', () => {
-    const alarmed = SUSPECTS.filter((s) => s.tone === 'alarm');
-    expect(alarmed).toHaveLength(1);
-    expect(alarmed[0]?.id).toBe('fedya');
-  });
-});
-
-describe('CLUE2_SLIPPERY.phrases (экран 12)', () => {
-  it('ровно шесть скользких фраз', () => {
-    expect(CLUE2_SLIPPERY.phrases).toHaveLength(6);
-  });
-
-  it('уникальные id, непустые phrase и thought', () => {
-    expectUniqueIds(CLUE2_SLIPPERY.phrases);
-    for (const item of CLUE2_SLIPPERY.phrases) {
-      expectNonEmptyStrings(item);
+  it('следующие шесть сообщений имеют интервал 350 мс', () => {
+    for (const msg of prologueContent.messages.slice(6, 12)) {
+      expect(msg.delayMs).toBe(350);
     }
   });
-});
 
-describe('CLUE3_REBUILD.blocks (экран 18)', () => {
-  it('ровно пять блоков реконструкции', () => {
-    expect(CLUE3_REBUILD.blocks).toHaveLength(5);
+  it('перед тринадцатым сообщением пауза 1200 мс', () => {
+    expect(prologueContent.messages[12].delayMs).toBe(1200);
   });
 
-  it('уникальные id, непустые title и note, фиксированный порядок', () => {
-    expectUniqueIds(CLUE3_REBUILD.blocks);
-    expect(idsOf(CLUE3_REBUILD.blocks)).toEqual([
-      'reason',
-      'promise',
-      'proof',
-      'fear-relief',
-      'action',
+  it('только тринадцатое сообщение крупнее и в тоне alarm', () => {
+    const [last, ...rest] = [...prologueContent.messages].reverse();
+    expect(last.size).toBe('lg');
+    expect(last.tone).toBe('alarm');
+    expect(last.text).toBe('Во всём виноват ты.');
+    for (const msg of rest) {
+      expect(msg.size).toBeUndefined();
+      expect(msg.tone).toBeUndefined();
+    }
+  });
+
+  it('текст первого и последнего обычного сообщения — дословно из SPEC.md', () => {
+    expect(prologueContent.messages[0].text).toBe('Слушай, заявки какие-то говно.');
+    expect(prologueContent.messages[11].text).toBe('Наверное, ты что-то неправильно настроил.');
+  });
+
+  it('клиент — Алексей, статус и подсказка о пропуске заданы', () => {
+    expect(prologueContent.client.name).toBe('Алексей');
+    expect(prologueContent.client.subtitle).toBe('клиент');
+    expect(prologueContent.typingStatus).toBe('печатает...');
+    expect(prologueContent.skipHintDelayMs).toBe(3000);
+  });
+});
+
+describe('whoYouAreContent — экран 1 (SPEC.md §4)', () => {
+  it('ровно 5 вариантов инструмента с ожидаемыми id', () => {
+    expect(idsOf(whoYouAreContent.options)).toEqual(['direct', 'avito', 'vk', 'tg-ads', 'several']);
+  });
+
+  it('id уникальны', () => {
+    expect(new Set(idsOf(whoYouAreContent.options)).size).toBe(5);
+  });
+});
+
+describe('videoScreens — экраны 2/4/7/11 (SPEC.md §4, §5.1)', () => {
+  it('ровно 4 видео-экрана', () => {
+    expect(videoScreens).toHaveLength(4);
+  });
+
+  it('id уникальны и совпадают с маршрутом', () => {
+    const ids = videoScreens.map((v) => v.id);
+    expect(new Set(ids).size).toBe(4);
+    expect(ids).toEqual(['v1-part1', 'v1-part2', 'v2', 'v3']);
+  });
+
+  it('у каждого из 4 видео-экранов свой ключ слота — четыре разных, не три', () => {
+    const slots = videoScreens.map((v) => v.videoEnvVar);
+    expect(new Set(slots).size).toBe(4);
+    expect(slots).toEqual([
+      'VITE_VIDEO_1A_URL',
+      'VITE_VIDEO_1B_URL',
+      'VITE_VIDEO_2_URL',
+      'VITE_VIDEO_3_URL',
     ]);
-    for (const block of CLUE3_REBUILD.blocks) {
-      expectNonEmptyStrings(block);
+  });
+
+  it('v1-part1 и v1-part2 — разные куски записи, не один файл (правка координатора)', () => {
+    // Регресс-тест: экран 2 (до интерактивной паузы экрана 3) и экран 4
+    // (разбор после неё) — два разных куска видео 1. Общий слот заставил бы
+    // человека, выбравшего покупателя на экране 3, увидеть то же видео с
+    // начала на экране 4.
+    const part1 = videoScreens.find((v) => v.id === 'v1-part1');
+    const part2 = videoScreens.find((v) => v.id === 'v1-part2');
+    expect(part1?.videoEnvVar).toBe('VITE_VIDEO_1A_URL');
+    expect(part2?.videoEnvVar).toBe('VITE_VIDEO_1B_URL');
+    expect(part1?.videoEnvVar).not.toBe(part2?.videoEnvVar);
+  });
+
+  it('пометка ФОРМУЛА общая у обеих половин видео 1, несмотря на разные слоты', () => {
+    const part1 = videoScreens.find((v) => v.id === 'v1-part1');
+    const part2 = videoScreens.find((v) => v.id === 'v1-part2');
+    expect(part1?.note).toBe(part2?.note);
+  });
+
+  it('пометка с кодовым словом задана только для частей 1 и 2, не для 3', () => {
+    const byId = Object.fromEntries(videoScreens.map((v) => [v.id, v]));
+    expect(byId['v1-part1'].note).toContain('ФОРМУЛА');
+    expect(byId['v1-part2'].note).toContain('ФОРМУЛА');
+    expect(byId.v2.note).toContain('ОФФЕР');
+    expect(byId.v3.note).toBeUndefined();
+  });
+});
+
+describe('castChoiceContent — экран 3 (SPEC.md §4)', () => {
+  it('ровно 5 покупателей с ожидаемыми id', () => {
+    expect(idsOf(castChoiceContent.buyers)).toEqual(['vasya', 'stepa', 'kolya', 'sasha', 'fedya']);
+  });
+
+  it('id уникальны', () => {
+    expect(new Set(idsOf(castChoiceContent.buyers)).size).toBe(5);
+  });
+
+  it('карточки не содержат оценки правильности ни в каком поле', () => {
+    for (const buyer of castChoiceContent.buyers) {
+      expect(Object.keys(buyer).sort()).toEqual(['description', 'id', 'name']);
     }
   });
 });
 
-describe('FINAL_DIRECTIONS (экран 20)', () => {
-  it('ровно четыре направления', () => {
-    expect(FINAL_DIRECTIONS).toHaveLength(4);
+describe('unlockAudienceContent / unlockOfferContent — экраны 5 и 8 (SPEC.md §4)', () => {
+  it('кодовые слова — ФОРМУЛА и ОФФЕР', () => {
+    expect(unlockAudienceContent.codeword).toBe('ФОРМУЛА');
+    expect(unlockOfferContent.codeword).toBe('ОФФЕР');
   });
 
-  it('уникальные id, непустые title/question/answer', () => {
-    expectUniqueIds(FINAL_DIRECTIONS);
-    for (const direction of FINAL_DIRECTIONS) {
-      expectNonEmptyStrings(direction);
-    }
-  });
-});
-
-describe('VERDICT_FIRST.options (экран 3)', () => {
-  it('ровно шесть вариантов', () => {
-    expect(VERDICT_FIRST.options).toHaveLength(6);
+  it('id совпадают с элементами FunnelData.unlocked', () => {
+    expect(unlockAudienceContent.id).toBe('audience');
+    expect(unlockOfferContent.id).toBe('offer');
   });
 
-  it('уникальные id, непустые label', () => {
-    expectUniqueIds(VERDICT_FIRST.options);
-    for (const option of VERDICT_FIRST.options) {
-      expectNonEmptyStrings(option);
-    }
+  it('unlockContents содержит ровно оба варианта с уникальными id', () => {
+    expect(unlockContents).toHaveLength(2);
+    expect(new Set(idsOf(unlockContents)).size).toBe(2);
   });
 
-  it('ровно у четырёх вариантов oldFrame === true', () => {
-    const oldFrameCount = VERDICT_FIRST.options.filter((o) => o.oldFrame === true).length;
-    expect(oldFrameCount).toBe(4);
-  });
-
-  it('oldFrame расставлен по конкретным вариантам из SPEC.md, а не абстрактно', () => {
-    const byId = new Map(VERDICT_FIRST.options.map((o) => [o.id, o.oldFrame]));
-    expect(byId.get('search-queries')).toBe(true);
-    expect(byId.get('ads-bids')).toBe(true);
-    expect(byId.get('manager-work')).toBe(true);
-    expect(byId.get('unclear')).toBe(true);
-    expect(byId.get('audience-reason')).toBe(false);
-    expect(byId.get('offer-site')).toBe(false);
+  it('сообщение об ошибке одинаково на обоих экранах', () => {
+    expect(unlockAudienceContent.errorMessage).toBe(unlockOfferContent.errorMessage);
   });
 });
 
-describe('VERDICT_SECOND.options (экран 22)', () => {
-  it('ровно пять вариантов', () => {
-    expect(VERDICT_SECOND.options).toHaveLength(5);
+describe('emptySiteContent — экран 6 (SPEC.md §4)', () => {
+  it('заголовок дословно совпадает с первой строкой карточки сайта на экране 10', () => {
+    // Рифма экранов 6 и 10 держится на буквальном совпадении текста —
+    // правка координатора после ревизии задачи 3.
+    expect(emptySiteContent.headline).toBe(linkBreakContent.site[0]);
+    expect(emptySiteContent.headline).toBe('Качественный ремонт квартир под ключ.');
   });
 
-  it('уникальные id, непустые label', () => {
-    expectUniqueIds(VERDICT_SECOND.options);
-    for (const option of VERDICT_SECOND.options) {
-      expectNonEmptyStrings(option);
-    }
+  it('ровно 4 пункта преимуществ', () => {
+    expect(emptySiteContent.bullets).toHaveLength(4);
+  });
+
+  it('ровно 3 варианта ответа с уникальными id', () => {
+    expect(idsOf(emptySiteContent.options)).toEqual(['yes', 'no', 'unclear']);
   });
 });
 
-describe('pickEnding (экран 22 — концовка по oldFrame первого ответа)', () => {
-  it('oldFrame: true даёт концовку "Вот она, смена картины мира."', () => {
-    const ending = pickEnding(true);
-    expect(ending.title).toBe('Вот она, смена картины мира.');
-    expect(ending.caption).toBe(
-      'Мы не сказали тебе, что ты изменился. Ты сам дал другой ответ на тот же вопрос.'
+describe('quizContent — экран 9 (SPEC.md §4)', () => {
+  it('ровно 5 вопросов', () => {
+    expect(quizContent.questions).toHaveLength(5);
+  });
+
+  it('id вопросов уникальны', () => {
+    expect(new Set(idsOf(quizContent.questions)).size).toBe(5);
+  });
+
+  it('у каждого вопроса ровно 4 варианта и ровно один верный', () => {
+    for (const question of quizContent.questions) {
+      expect(question.options).toHaveLength(4);
+      const correctCount = question.options.filter((o) => o.correct).length;
+      expect(correctCount, `вопрос ${question.id}`).toBe(1);
+    }
+  });
+
+  it('id вариантов уникальны внутри каждого вопроса', () => {
+    for (const question of quizContent.questions) {
+      expect(new Set(idsOf(question.options)).size).toBe(4);
+    }
+  });
+
+  it('id вариантов уникальны глобально по всему квизу', () => {
+    const allOptionIds = quizContent.questions.flatMap((q) => idsOf(q.options));
+    expect(new Set(allOptionIds).size).toBe(allOptionIds.length);
+  });
+
+  it('верный ответ первого вопроса — про фиксированный срок и пеню (дословно из SPEC.md)', () => {
+    const correct = quizContent.questions[0].options.find((o) => o.correct);
+    expect(correct?.label).toBe(
+      'Ремонт новостройки в срок, зафиксированный в договоре. За каждый день просрочки — пеня'
     );
   });
+});
 
-  it('oldFrame: false даёт концовку "Ты и раньше смотрел в правильную сторону."', () => {
-    const ending = pickEnding(false);
-    expect(ending.title).toBe('Ты и раньше смотрел в правильную сторону.');
-    expect(ending.caption).toBe('Разница в том, что теперь за этим стоит цепочка, а не догадка.');
+describe('linkBreakContent — экран 10 (SPEC.md §4)', () => {
+  it('карточка сайта — ровно 3 строки', () => {
+    expect(linkBreakContent.site).toHaveLength(3);
   });
 
-  it('две концовки текстуально различны', () => {
-    expect(pickEnding(true).title).not.toBe(pickEnding(false).title);
+  it('заголовок обвинения — дословно из SPEC.md', () => {
+    expect(linkBreakContent.headline).toBe('И вся наша логика умерла после клика.');
   });
 });
 
-describe('WANTS.options (экран 5)', () => {
-  it('ровно шесть вариантов, уникальные id, непустые label', () => {
-    expect(WANTS.options).toHaveLength(6);
-    expectUniqueIds(WANTS.options);
-    for (const option of WANTS.options) {
-      expectNonEmptyStrings(option);
-    }
+describe('offerContent — экран 12 (SPEC.md §4)', () => {
+  it('ровно 13 пунктов «Внутри»', () => {
+    expect(offerContent.insideItems).toHaveLength(13);
+  });
+
+  it('цена — 3 990 ₽', () => {
+    expect(offerContent.price).toBe('3 990 ₽');
   });
 });
 
-describe('WHO_IS_VASYA_CARDS (экран 4)', () => {
-  it('ровно четыре карточки, уникальные id', () => {
-    expect(WHO_IS_VASYA_CARDS).toHaveLength(4);
-    expectUniqueIds(WHO_IS_VASYA_CARDS);
+describe('autosellerContent — экран 13 (SPEC.md §4)', () => {
+  it('ровно 9 возражений', () => {
+    expect(autosellerContent.objections).toHaveLength(9);
   });
 
-  it('у каждой непустой title и хотя бы один непустой параграф', () => {
-    for (const card of WHO_IS_VASYA_CARDS) {
-      expect(card.title.length).toBeGreaterThan(0);
-      expect(card.paragraphs.length).toBeGreaterThan(0);
-      for (const paragraph of card.paragraphs) {
-        expect(paragraph.length).toBeGreaterThan(0);
-      }
-    }
-  });
-});
-
-describe('CLUES (карточки улик 1/2/3, экраны 8/9/13/14/19)', () => {
-  it('ровно три улики с n=1,2,3 по порядку', () => {
-    expect(CLUES.map((c) => c.n)).toEqual([1, 2, 3]);
+  it('id возражений уникальны', () => {
+    expect(new Set(idsOf(autosellerContent.objections)).size).toBe(9);
   });
 
-  it('у каждой непустые stamp и verdict', () => {
-    for (const clue of CLUES) {
-      expect(clue.stamp.length).toBeGreaterThan(0);
-      expect(clue.verdict.length).toBeGreaterThan(0);
+  it('у каждого возражения непустой развёрнутый ответ', () => {
+    for (const objection of autosellerContent.objections) {
+      expect(objection.reply.trim().length, objection.id).toBeGreaterThan(0);
     }
   });
 
-  it('улики 1 и 2 несут инструмент (экраны 9 и 14), у улики 3 unlock-экрана нет по SPEC', () => {
-    const [clue1, clue2, clue3] = CLUES;
-    expect(clue1?.tool?.title).toBe('Анализ человека за запросом');
-    expect(clue2?.tool?.title).toBe('Сборка оффера');
-    expect(clue3?.tool).toBeUndefined();
-  });
-});
-
-describe('Каноническое объявление (экраны 12 и 17 цитируют один и тот же текст)', () => {
-  it('CLUE2_SLIPPERY.counterExample берёт значение из CANONICAL_AD_TEXT', () => {
-    expect(CLUE2_SLIPPERY.counterExample).toBe(CANONICAL_AD_TEXT);
-  });
-
-  it('CLUE3_SPLIT.adCard.text берёт значение из CANONICAL_AD_TEXT', () => {
-    expect(CLUE3_SPLIT.adCard.text).toBe(CANONICAL_AD_TEXT);
-  });
-
-  it('оба поля совпадают между собой (экран 18 обещает дословное совпадение объявления)', () => {
-    expect(CLUE2_SLIPPERY.counterExample).toBe(CLUE3_SPLIT.adCard.text);
-  });
-});
-
-describe('VIDEOS (экраны 6, 11, 16)', () => {
-  it('ровно три слота видео с метками "УЛИКА 0N / 03"', () => {
-    expect(VIDEOS).toHaveLength(3);
-    expect(VIDEOS.map((v) => v.label)).toEqual(['УЛИКА 01 / 03', 'УЛИКА 02 / 03', 'УЛИКА 03 / 03']);
+  it('кнопка перехода к практикуму содержит цену', () => {
+    expect(autosellerContent.ctaButton).toBe('Перейти к практикуму — 3 990 ₽');
   });
 });

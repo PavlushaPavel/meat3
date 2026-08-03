@@ -1,5 +1,5 @@
 /* globals.css — reset, типографика, мост токенов в Tailwind v4.
-   Тема принудительно тёмная (SPEC.md §2.1) — тени не используются нигде,
+   Тема принудительно тёмная (SPEC.md §2.2) — тени не используются нигде,
    глубина строится слоями фона --ink-900 -> --ink-800 -> --ink-700 и
    волосяными границами --ink-600. */
 
@@ -10,16 +10,19 @@
 @import './tokens.css';
 
 /* Шрифты — self-hosted, вариативные начертания, кириллица, без внешних запросов
-   (SPEC.md §2.2, §7). index.css каждого пакета подключает все сабсеты,
+   (SPEC.md §2.3, §7). index.css каждого пакета подключает все сабсеты,
    включая cyrillic и cyrillic-ext. */
 @import '@fontsource-variable/oswald';
 @import '@fontsource-variable/onest';
 @import '@fontsource-variable/jetbrains-mono';
-@import '@fontsource-variable/caveat';
 
 @theme {
   /* Цвета — мост к tokens.css. Имена namespaced Tailwind-ом (--color-*),
-     поэтому var()-ссылка на tokens.css не создаёт цикла. */
+     поэтому var()-ссылка на tokens.css не создаёт цикла. Ровно эти имена
+     обязаны давать рабочие утилиты bg, text и border с этим именем
+     (PLAN.md «Задача 1»: bg-toxic, text-toxic, text-lab, border-lab) —
+     проверено по собранному CSS и через getComputedStyle в браузере,
+     см. отчёт задачи 1. */
   --color-ink-900: var(--ink-900);
   --color-ink-800: var(--ink-800);
   --color-ink-700: var(--ink-700);
@@ -27,18 +30,20 @@
   --color-fog: var(--fog);
   --color-paper: var(--paper);
   --color-signal: var(--signal);
-  --color-evidence: var(--evidence);
+  --color-toxic: var(--toxic);
+  --color-lab: var(--lab);
   --color-alarm: var(--alarm);
 
   /* Шрифты — имя переменной Tailwind (--font-*) совпадает с именем в
      tokens.css дословно, поэтому здесь литерал, а не var(), иначе получится
-     циклическая CSS-переменная (--font-display: var(--font-display)). */
+     циклическая CSS-переменная (--font-display: var(--font-display)).
+     Рукописной гарнитуры (--font-hand) в этом мире нет — удалена вместе с
+     прежней воронкой-расследованием (SPEC.md §2.3). */
   --font-display: 'Oswald Variable', 'Oswald', system-ui, sans-serif;
   --font-body: 'Onest Variable', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
-  --font-hand: 'Caveat Variable', cursive;
 
-  /* Шкала размеров — SPEC §2.2 */
+  /* Шкала размеров — SPEC §2.3 */
   --text-1: var(--fs-1);
   --text-2: var(--fs-2);
   --text-3: var(--fs-3);
@@ -49,10 +54,11 @@
   --text-8: var(--fs-8);
   --text-9: var(--fs-9);
 
-  /* Радиусы — SPEC §2.3 */
+  /* Радиусы — SPEC §2.4 */
   --radius-label: var(--r-label);
   --radius-card: var(--r-card);
   --radius-chip: var(--r-chip);
+  --radius-bubble: var(--r-bubble);
 
   /* Отступы содержательного ритма */
   --spacing-gutter: var(--gutter);
@@ -77,7 +83,7 @@
   }
 
   html {
-    /* Тема принудительно тёмная, тема клиента Telegram игнорируется (SPEC.md §2.1). */
+    /* Тема принудительно тёмная, тема клиента Telegram игнорируется (SPEC.md §2.2). */
     color-scheme: dark;
     background: var(--ink-900);
     -webkit-tap-highlight-color: transparent;
@@ -132,7 +138,7 @@
     outline-offset: 2px;
   }
 
-  /* ---- Reduced motion (SPEC.md §2.4) ----
+  /* ---- Reduced motion (SPEC.md §2.5) ----
      Декоративное движение выключается полностью; сюжетные сцены сохраняют
      последовательность и тайминг, но без сдвигов и масштабирования — это
      обрабатывается точечно в каждой анимации через useReducedMotion(),
@@ -146,5 +152,18 @@
       transition-duration: 0.001ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+/* ---- Утилита предупреждающей штриховки (SPEC.md §2.2, PLAN.md «Задача 1») ----
+   Узкая полоса-разделитель на границах разделов и над ценой — НЕ фон блока с
+   текстом (иначе текст не прочитать). Живёт в @layer utilities (а не base):
+   утилиты обязаны побеждать в каскаде, а не наоборот (см. комментарий у
+   @layer base выше — этот проект уже один раз потерял все отступы и заливки
+   из-за незаслоённого CSS). src/ui/HazardStripe.tsx (задача 2) применяет
+   этот класс на элементе фиксированной высоты. */
+@layer utilities {
+  .bg-hazard-stripe {
+    background-image: repeating-linear-gradient(45deg, var(--toxic) 0 5px, var(--ink-900) 5px 10px);
   }
 }

@@ -1,215 +1,189 @@
-import { useEffect, useRef, useState, type JSX } from 'react';
-import { ChatBubble } from '../ui/ChatBubble';
-import type { ChatMessage } from '../content/types';
-
-/**
- * Тайминги реела (SPEC.md §4, экран 0). Экспортированы, чтобы тест
- * (`chatReel.test.tsx`) продвигал фейковые таймеры на реальные значения, а не
- * дублировал магические числа отдельно от реализации.
- */
-export const CHAT_REEL_TIMING = {
-  /** сколько сообщение показывается перед тем, как начать удаляться. */
-  show: 900,
-  /** сжатие по высоте (transform: scaleY) и гашение при удалении — ChatBubble
-   *  уже реализует это через `state="out"`, реел только держит паузу той же
-   *  длины, чтобы удалить сообщение из DOM, когда анимация закончилась. */
-  remove: 350,
-  /** шаг между появлением соседних burst-сообщений в очереди. */
-  queue: 250,
-  /** пауза после того, как реел доигран, перед вызовом onDone. */
-  pause: 1200,
-} as const;
+import { useEffect, useRef, useState, type JSX, type ReactNode } from 'react';
+import { motion } from 'motion/react';
+import { ChatFrame } from '../ui/chat/ChatFrame';
+import { ChatMessage } from '../ui/chat/ChatMessage';
+import { useReducedMotion } from '../lib/motion';
+import { haptics } from '../lib/telegram';
+import type { PrologueMessage } from '../content';
 
 interface ChatReelProps {
-  messages: ChatMessage[];
+  /** Ровно 13 сообщений в порядке SPEC.md §4, экран 0; `delayMs` — из данных. */
+  messages: PrologueMessage[];
+  skipHint: string;
+  /** Через сколько мс после монтирования появляется подсказка о пропуске. */
+  skipHintDelayMs: number;
+  /** Пробрасывается в `ChatFrame` как есть — строка ввода/вопрос приложения, чужая подмена (задача 4 не решает, ЧТО там, только КОГДА). */
+  footer?: ReactNode;
+  /** Вызывается ровно один раз — лента доиграла сама, пропущена тапом или пропущена в момент последнего перехода (все три пути сходятся в одну функцию `finish`). */
   onDone: () => void;
-  /** Тап по контейнеру мгновенно доигрывает реел. По умолчанию включено —
-   *  SPEC.md §4 экран 0 требует это как базовое поведение, а не опцию. */
-  skippable?: boolean;
 }
 
-interface VisibleMessage {
-  id: string;
-  text: string;
-  author: ChatMessage['author'];
-  phase: 'in' | 'out';
-  /** Только самое первое сообщение реела, засеянное `seedFirstMessage` —
-   *  монтируется сразу в конечной непрозрачности (ChatBubble state="seed"),
-   *  а не гаснет из invisible, как все остальные (SPEC.md §4, экран 0). */
-  seed: boolean;
-}
+/** Два колебания по 4px, 180 мс (SPEC.md §2.5, §4). Полные строки `transform`, не короткие `x`-пропсы (SPEC.md «Правила»). */
+const SHAKE_MS = 180;
+const SHAKE_KEYFRAMES = [
+  'translateX(0px)',
+  'translateX(4px)',
+  'translateX(-4px)',
+  'translateX(4px)',
+  'translateX(-4px)',
+  'translateX(0px)',
+] as const;
+/** Вспышка фона 400 мс (SPEC.md §4). */
+const FLASH_MS = 400;
+/**
+ * Пауза после конца тряски, прежде чем `onDone` уводит экран в режим
+ * приложения: «После обвинения статус... гаснет» (SPEC.md §4) читается как
+ * последовательность, а не как одновременная подмена в тот же кадр, что и
+ * появление реплики, — иначе обвинение не успевает прочитаться.
+ */
+const REVEAL_DELAY_MS = 260;
 
-/** Индекс начала забега подряд идущих burst-сообщений, содержащего index —
- *  нужен, чтобы удалить весь забег разом, когда он весь показан (SPEC.md §4:
- *  «burst — вылетает в очередь и остаётся до общего удаления»). */
-function burstRunStart(messages: ChatMessage[], index: number): number {
-  let start = index;
-  while (start > 0 && messages[start - 1].behavior === 'burst') start -= 1;
-  return start;
+/**
+ * Время `ЧЧ:ММ` растёт на минуту к каждому следующему сообщению и
+ * отсчитывается от текущего момента назад на длину ленты — так, чтобы
+ * последнее (обвинение) несло время «прямо сейчас» (SPEC.md §4, экран 0).
+ * Базовая точка — момент монтирования (`baseMs`), а не вызов `Date.now()`
+ * на каждый рендер, иначе более ранние сообщения «плыли» бы во времени,
+ * пока лента доигрывает.
+ */
+function formatClock(baseMs: number, index: number, total: number): string {
+  const offsetMinutes = total - 1 - index;
+  const d = new Date(baseMs - offsetMinutes * 60_000);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
 }
 
 /**
- * Реел чата (SPEC.md §4, экран 0; мехника задачи 4). Конечный автомат по
- * списку сообщений, поведение каждого шага приходит из `message.behavior`, а
- * не зашито в компонент:
- * - `delete` — появилось, показалось `show` мс, удалилось за `remove` мс,
- *   затем следующее сообщение.
- * - `burst` — весь идущий подряд забег burst-сообщений появляется по одному
- *   с шагом `queue` мс и остаётся вместе на экране; когда показан весь забег
- *   — общая пауза `show` мс, затем все сообщения забега удаляются разом.
- * - `hold` — появляется и остаётся навсегда, реел идёт дальше без удаления.
- * После последнего сообщения — пауза `pause` мс, затем `onDone()`.
+ * Лента пролога (SPEC.md §4, экран 0; docs/PLAN.md «Задача 4»). Сообщения
+ * НАКАПЛИВАЮТСЯ — первое видно сразу при монтировании в конечной
+ * непрозрачности (`ChatMessage instant`), дальше `visibleCount` растёт по
+ * одному через цепочку `setTimeout`, интервал каждого шага — `delayMs`
+ * СЛЕДУЮЩЕГО сообщения (оно же поле, а не константа в компоненте).
  *
- * Вся хронология — цепочка `setTimeout`, где каждый шаг планирует следующий
- * сам (а не заранее собранный список меток времени): в любой момент активен
- * не больше одного таймера, и он всегда зарегистрирован в `timersRef` —
- * поэтому `finish()` (естественное завершение, скип, размонтирование)
- * гарантированно останавливает всю цепочку целиком.
+ * Все таймеры регистрируются в одном `Set` и снимаются либо поштучно по
+ * выполнении, либо разом в `finish()`/при размонтировании — после
+ * размонтирования на середине ленты не остаётся ни одного активного
+ * таймера (проверено `chatReel.test.tsx`, `vi.getTimerCount()`).
  *
- * Контейнер — `flex-1` внутри родительского `Screen` (правка финальной
- * доводки): без этого высота реела определялась только видимыми сообщениями,
- * и на пустом экране (до первого сообщения — уже неактуально, но и между
- * сообщениями) лента прижималась к верху экрана, а не к низу, как в
- * настоящем мессенджере. `flex-1` + `justify-end` вместе дают ленту, растущую
- * снизу вверх во всю доступную высоту.
+ * `onDone` вызывается ровно один раз через `finish()` — она инвалидирует
+ * себя `doneRef` до какой-либо другой работы, поэтому неважно, что именно
+ * её вызвало: естественный конец ленты, тап-пропуск или тап ровно в момент
+ * последнего перехода.
  */
-/** Первое сообщение реела нужно на экране в кадре монтирования, а не после
- *  первого эффекта (SPEC.md §4, экран 0; отчёт финальной доводки: «пролог
- *  начинается с пустого экрана» — раньше `visible` стартовал пустым массивом,
- *  и добавление первого сообщения происходило в `useEffect`, то есть отрисовкой
- *  позже первого кадра). Ленивый инициализатор `useState` сеет то же самое
- *  сообщение, которое иначе добавил бы `step(0)`, — эффект ниже это учитывает
- *  через `skipAdd` и не дублирует его. */
-function seedFirstMessage(messages: ChatMessage[]): VisibleMessage[] {
-  const first = messages[0];
-  if (!first) return [];
-  return [{ id: first.id, text: first.text, author: first.author, phase: 'in', seed: true }];
-}
+export function ChatReel({ messages, skipHint, skipHintDelayMs, footer, onDone }: ChatReelProps): JSX.Element {
+  const reduced = useReducedMotion();
+  // Первое сообщение уже видно на первом кадре — счётчик стартует с 1, не с 0.
+  const [visibleCount, setVisibleCount] = useState(1);
+  const [showHint, setShowHint] = useState(false);
+  const [alarmed, setAlarmed] = useState(false);
 
-export function ChatReel({ messages, onDone, skippable = true }: ChatReelProps): JSX.Element {
-  const [visible, setVisible] = useState<VisibleMessage[]>(() => seedFirstMessage(messages));
   const doneRef = useRef(false);
-  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
-  const finishRef = useRef<() => void>(() => {});
+  const timers = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  const baseTimeRef = useRef(Date.now());
 
+  function schedule(fn: () => void, ms: number): void {
+    const id = setTimeout(() => {
+      timers.current.delete(id);
+      fn();
+    }, ms);
+    timers.current.add(id);
+  }
+
+  function clearTimers(): void {
+    timers.current.forEach((id) => clearTimeout(id));
+    timers.current.clear();
+  }
+
+  function finish(): void {
+    if (doneRef.current) return;
+    doneRef.current = true;
+    clearTimers();
+    setShowHint(false);
+    onDone();
+  }
+
+  // Гарантированная уборка при размонтировании на середине ленты.
+  useEffect(() => () => clearTimers(), []);
+
+  // Подсказка о пропуске — независимый таймер, тоже живёт в общем Set.
   useEffect(() => {
-    doneRef.current = false;
-    setVisible(seedFirstMessage(messages));
+    schedule(() => setShowHint(true), skipHintDelayMs);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- monтируется один раз, skipHintDelayMs из контента не меняется в рантайме
+  }, []);
 
-    const timers = timersRef.current;
+  // Цепочка появления следующего сообщения; на последнем — тряска/вспышка и финиш.
+  useEffect(() => {
+    if (doneRef.current) return;
 
-    function schedule(fn: () => void, ms: number): void {
-      const id = setTimeout(() => {
-        timers.delete(id);
-        fn();
-      }, ms);
-      timers.add(id);
-    }
-
-    function clearAll(): void {
-      timers.forEach((id) => clearTimeout(id));
-      timers.clear();
-    }
-
-    function finish(): void {
-      if (doneRef.current) return;
-      doneRef.current = true;
-      clearAll();
-      onDone();
-    }
-
-    finishRef.current = finish;
-
-    function step(index: number, skipAdd = false): void {
-      if (doneRef.current) return;
-
-      if (index >= messages.length) {
-        schedule(finish, CHAT_REEL_TIMING.pause);
+    if (visibleCount >= messages.length) {
+      haptics.heavy();
+      if (reduced) {
+        finish();
         return;
       }
-
-      const message = messages[index];
-
-      if (message.behavior === 'delete') {
-        if (!skipAdd) {
-          setVisible((v) => [
-            ...v,
-            { id: message.id, text: message.text, author: message.author, phase: 'in', seed: false },
-          ]);
-        }
-        schedule(() => {
-          setVisible((v) => v.map((item) => (item.id === message.id ? { ...item, phase: 'out' } : item)));
-          schedule(() => {
-            setVisible((v) => v.filter((item) => item.id !== message.id));
-            step(index + 1);
-          }, CHAT_REEL_TIMING.remove);
-        }, CHAT_REEL_TIMING.show);
-        return;
-      }
-
-      if (message.behavior === 'burst') {
-        if (!skipAdd) {
-          setVisible((v) => [
-            ...v,
-            { id: message.id, text: message.text, author: message.author, phase: 'in', seed: false },
-          ]);
-        }
-        const isLastOfRun = messages[index + 1]?.behavior !== 'burst';
-        if (!isLastOfRun) {
-          schedule(() => step(index + 1), CHAT_REEL_TIMING.queue);
-          return;
-        }
-        const runStart = burstRunStart(messages, index);
-        const runIds = new Set(messages.slice(runStart, index + 1).map((m) => m.id));
-        schedule(() => {
-          setVisible((v) => v.map((item) => (runIds.has(item.id) ? { ...item, phase: 'out' } : item)));
-          schedule(() => {
-            setVisible((v) => v.filter((item) => !runIds.has(item.id)));
-            step(index + 1);
-          }, CHAT_REEL_TIMING.remove);
-        }, CHAT_REEL_TIMING.show);
-        return;
-      }
-
-      // hold — появляется и остаётся, реел идёт дальше без удаления.
-      if (!skipAdd) {
-        setVisible((v) => [
-          ...v,
-          { id: message.id, text: message.text, author: message.author, phase: 'in', seed: false },
-        ]);
-      }
-      schedule(() => step(index + 1), CHAT_REEL_TIMING.show);
+      setAlarmed(true);
+      schedule(() => finish(), SHAKE_MS + REVEAL_DELAY_MS);
+      return;
     }
 
-    // index 0 уже на экране благодаря seedFirstMessage выше — step(0, true)
-    // продолжает его таймлайн (показ/очередь/пауза), не добавляя повторно.
-    step(0, true);
+    const next = messages[visibleCount];
+    schedule(() => setVisibleCount((c) => Math.min(c + 1, messages.length)), next.delayMs);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- messages — стабильная ссылка из контента
+  }, [visibleCount, reduced]);
 
-    return () => {
-      clearAll();
-    };
-  }, [messages, onDone]);
+  function handleSkip(): void {
+    if (doneRef.current) return;
+    // Тап мгновенно доигрывает ленту до обвинения — прыжок в конец массива
+    // запускает тот же эффект выше (тряска/вспышка/finish), только без
+    // ожидания промежуточных delayMs. Повторный тап после этого — no-op,
+    // потому что состояние уже на максимуме и эффект не перезапускается.
+    setVisibleCount(messages.length);
+  }
 
-  const handleSkip = (): void => {
-    if (!skippable) return;
-    finishRef.current();
-  };
+  const visible = messages.slice(0, visibleCount);
 
   return (
-    <div
-      data-testid="chat-reel"
+    <motion.div
+      className="relative flex min-h-0 flex-1 flex-col"
       onClick={handleSkip}
-      className="flex min-h-[360px] flex-1 flex-col justify-end gap-3 py-2"
+      animate={
+        !reduced && alarmed ? { transform: [...SHAKE_KEYFRAMES] } : { transform: 'translateX(0px)' }
+      }
+      transition={{ duration: SHAKE_MS / 1000 }}
     >
-      {visible.map((item) => (
-        <ChatBubble
-          key={item.id}
-          author={item.author}
-          state={item.phase === 'out' ? 'out' : item.seed ? 'seed' : 'in'}
-        >
-          {item.text}
-        </ChatBubble>
-      ))}
-    </div>
+      <ChatFrame footer={footer}>
+        {visible.map((message, i) => (
+          <ChatMessage
+            key={message.id}
+            text={message.text}
+            time={formatClock(baseTimeRef.current, i, messages.length)}
+            side="in"
+            size={message.size === 'lg' ? 'lg' : 'md'}
+            tone={message.tone === 'alarm' ? 'alarm' : 'default'}
+            tail={i === visibleCount - 1}
+            instant={i === 0}
+          />
+        ))}
+      </ChatFrame>
+
+      {!reduced && alarmed ? (
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-alarm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 0.35, 0] }}
+          transition={{ duration: FLASH_MS / 1000 }}
+        />
+      ) : null}
+
+      {showHint ? (
+        <div className="pointer-events-none absolute right-0 bottom-3 left-0 flex justify-center">
+          <span className="rounded-chip border border-ink-600 bg-ink-900 px-3 py-1.5 font-mono text-1 uppercase tracking-[0.08em] text-fog">
+            {skipHint}
+          </span>
+        </div>
+      ) : null}
+    </motion.div>
   );
 }

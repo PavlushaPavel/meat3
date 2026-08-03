@@ -1,86 +1,88 @@
 import type { JSX } from 'react';
 import { Screen } from '../../ui/Screen';
-import { BottomBar } from '../../ui/BottomBar';
-import { Button } from '../../ui/Button';
+import { SystemLabel } from '../../ui/SystemLabel';
 import { Display } from '../../ui/Display';
 import { Prose } from '../../ui/Prose';
-import { Sticker } from '../../ui/Sticker';
+import { BatchLabel } from '../../ui/BatchLabel';
+import { HazardStripe } from '../../ui/HazardStripe';
+import { BottomBar } from '../../ui/BottomBar';
+import { Button } from '../../ui/Button';
+import { offerContent } from '../../content';
+import { useFunnel } from '../../store/funnel';
 import { env } from '../../lib/env';
 import { openLink } from '../../lib/telegram';
-import {
-  LEVER_CARDS,
-  OFFER_BUTTON,
-  OFFER_CLOSING_PARAGRAPH,
-  OFFER_GAP_PARAGRAPH,
-  OFFER_GAP_STICKER,
-  OFFER_INSIGHT_LINE,
-  OFFER_INTRO,
-  OFFER_LEAD_PARAGRAPH,
-  OFFER_LINK_PLACEHOLDER_HINT,
-  OFFER_PRICE,
-  OFFER_SYSTEM_LABEL,
-  PRACTICUM,
-  SUPPORT_LINK_TEXT,
-} from '../../content/offer';
-import { LeverCards } from './LeverCards';
-import { PracticumPath } from './PracticumPath';
+
+// SPEC.md §5.2: пустая переменная — неактивная кнопка с честной подписью,
+// не битая ссылка. Строка не заведена в src/content/* — это структурная
+// пометка об отсутствии материала (тот же прецедент, что src/ui/VideoSlot.tsx
+// и src/ui/StepFallback.tsx уже хардкодят), не редакционный копирайт
+// конкретного экрана, поэтому дублируется здесь и в AutosellerScreen.tsx
+// буквально (см. отчёт задачи 5).
+const CHECKOUT_HINT = 'Материал ещё не подшит';
+
+// SPEC.md §5.2 требует условный «блок поддержки» на экране 12
+// (VITE_SUPPORT_URL, «блок не рендерится» при пустом значении), но
+// src/content/offer.ts (задача 3) не содержит для него текста — SPEC.md §4
+// вообще не показывает этот элемент в каноническом копирайте экрана 12.
+// Минимальная структурная подпись по тому же прецеденту, что и выше —
+// это дефект спецификации/контент-слоя, не решение задачи 5; см. отчёт.
+const SUPPORT_LABEL = 'Поддержка';
 
 /**
- * Экран 23 (offer), SPEC.md §4/§5.2 — продажа, конец расследования. Кнопка
- * ведёт на `env.checkout` через `openLink` (единственный способ открывать
- * ссылки из Telegram Mini App — обычный `window.open` там работает не так).
- * Пустая переменная — честно неактивная кнопка с подписью, а не битая
- * ссылка. Блок поддержки не рендерится вовсе при пустом `env.support`.
- * Никаких таймеров и счётчиков мест — экран продажи не должен выглядеть
- * дешевле остальных (см. отчёт задачи 6).
- *
- * Грамматика дела вместо десяти абзацев одинаковой прозы (отчёт финальной
- * доводки, пункт 3): системная метка + крупный заголовок вместо первого
- * абзаца, карточки рычагов пронумерованы как досье, вывод-инсайт крупнее
- * рядовой прозы, короткая фраза-затравка перед разрывом подана стикером, путь
- * практикума — визуальная последовательность, а цена с кнопкой собраны одним
- * блоком внутри `BottomBar`, а не разнесены по потоку экрана. Текст везде тот
- * же, что и раньше, — доказательство читается по `docs/SPEC.md` §4.
+ * Экран 12 — `offer` (SPEC.md §4). Продающий экран не должен выглядеть
+ * дешевле остальных: без таймеров обратного отсчёта и счётчиков мест
+ * (docs/PLAN.md «Задача 5»). Список «Внутри» — моноширинные метки
+ * (`BatchLabel`), полоса штриховки `HazardStripe` над ценой. Основная
+ * кнопка ведёт на `env.checkout` через `openLink` (единственный разрешённый
+ * способ открыть внешнюю ссылку), второстепенная — на экран 13 обычным
+ * `goNext` (offer → autoseller — это ровно следующий шаг маршрута).
  */
 export function OfferScreen(): JSX.Element {
-  const hasCheckout = env.checkout.length > 0;
-  const hasSupport = env.support.length > 0;
+  const goNext = useFunnel((s) => s.goNext);
+  const checkoutReady = env.checkout.length > 0;
 
   return (
-    <Screen label={OFFER_SYSTEM_LABEL}>
-      <Display size="lg">{OFFER_INTRO}</Display>
-      <LeverCards cards={LEVER_CARDS} />
-      <Prose>{OFFER_LEAD_PARAGRAPH}</Prose>
-      <Display size="md" tone="signal">
-        {OFFER_INSIGHT_LINE}
+    <Screen label={offerContent.badge}>
+      <Display size="lg">{offerContent.title}</Display>
+      <Prose>{offerContent.description}</Prose>
+
+      <div className="flex flex-col gap-3">
+        <SystemLabel>{offerContent.insideLabel}</SystemLabel>
+        <ul className="flex flex-col gap-2">
+          {offerContent.insideItems.map((item, i) => (
+            <li key={i}>
+              <BatchLabel>{item}</BatchLabel>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <HazardStripe />
+      <Display size="xl" tone="toxic">
+        {offerContent.price}
       </Display>
-      <Prose>{OFFER_CLOSING_PARAGRAPH}</Prose>
-      <Sticker index={2}>{OFFER_GAP_STICKER}</Sticker>
-      <Prose>{OFFER_GAP_PARAGRAPH}</Prose>
-      <PracticumPath name={PRACTICUM.name} steps={PRACTICUM.steps} closingLine={PRACTICUM.closingLine} />
+
+      {env.support ? (
+        <button
+          type="button"
+          onClick={() => openLink(env.support)}
+          className="self-start font-mono text-2 uppercase tracking-[0.08em] text-fog underline underline-offset-4"
+        >
+          {SUPPORT_LABEL}
+        </button>
+      ) : null}
+
       <BottomBar>
-        <div className="flex flex-col gap-3 rounded-card border border-[var(--edge)] bg-ink-800 p-4">
-          <Display size="md" tone="evidence">
-            {OFFER_PRICE}
-          </Display>
-          <Button
-            variant="evidence"
-            onClick={hasCheckout ? () => openLink(env.checkout) : undefined}
-            disabled={!hasCheckout}
-            hint={hasCheckout ? undefined : OFFER_LINK_PLACEHOLDER_HINT}
-          >
-            {OFFER_BUTTON}
-          </Button>
-        </div>
-        {hasSupport ? (
-          <button
-            type="button"
-            onClick={() => openLink(env.support)}
-            className="self-center font-body text-3 text-fog underline underline-offset-2"
-          >
-            {SUPPORT_LINK_TEXT}
-          </button>
-        ) : null}
+        <Button
+          onClick={() => openLink(env.checkout)}
+          disabled={!checkoutReady}
+          hint={checkoutReady ? undefined : CHECKOUT_HINT}
+        >
+          {offerContent.primaryButton}
+        </Button>
+        <Button variant="ghost" onClick={goNext}>
+          {offerContent.secondaryButton}
+        </Button>
       </BottomBar>
     </Screen>
   );

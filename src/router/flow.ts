@@ -4,55 +4,35 @@
  */
 export type StepId =
   | 'prologue-chat'
-  | 'case-open'
-  | 'vasya-intro'
-  | 'verdict-first'
-  | 'who-is-vasya'
-  | 'wants'
-  | 'clue1-video'
-  | 'clue1-suspects'
-  | 'clue1-debrief'
-  | 'clue1-unlock'
-  | 'bridge-1'
-  | 'clue2-video'
-  | 'clue2-slippery'
-  | 'clue2-debrief'
-  | 'clue2-unlock'
-  | 'bridge-2'
-  | 'clue3-video'
-  | 'clue3-split'
-  | 'clue3-rebuild'
-  | 'clue3-found'
-  | 'final-chat'
-  | 'final-strike'
-  | 'verdict-second'
-  | 'offer';
+  | 'who-you-are'
+  | 'v1-part1'
+  | 'cast-choice'
+  | 'v1-part2'
+  | 'unlock-audience'
+  | 'empty-site'
+  | 'v2'
+  | 'unlock-offer'
+  | 'quiz'
+  | 'link-break'
+  | 'v3'
+  | 'offer'
+  | 'autoseller';
 
 export const FLOW: readonly StepId[] = [
   'prologue-chat',
-  'case-open',
-  'vasya-intro',
-  'verdict-first',
-  'who-is-vasya',
-  'wants',
-  'clue1-video',
-  'clue1-suspects',
-  'clue1-debrief',
-  'clue1-unlock',
-  'bridge-1',
-  'clue2-video',
-  'clue2-slippery',
-  'clue2-debrief',
-  'clue2-unlock',
-  'bridge-2',
-  'clue3-video',
-  'clue3-split',
-  'clue3-rebuild',
-  'clue3-found',
-  'final-chat',
-  'final-strike',
-  'verdict-second',
+  'who-you-are',
+  'v1-part1',
+  'cast-choice',
+  'v1-part2',
+  'unlock-audience',
+  'empty-site',
+  'v2',
+  'unlock-offer',
+  'quiz',
+  'link-break',
+  'v3',
   'offer',
+  'autoseller',
 ];
 
 /** Индекс id в маршруте. Бросает, если id не найден — сигнал рассинхронизации FLOW/StepId. */

@@ -1,10 +1,51 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render } from '@testing-library/react';
-import { ChatReel, CHAT_REEL_TIMING } from './ChatReel';
-import type { ChatMessage } from '../content/types';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { ChatReel } from './ChatReel';
+import type { PrologueMessage } from '../content';
 
-// Полифилл window.matchMedia (нужен useReducedMotion() внутри ChatBubble)
-// подключён один раз глобально — см. src/test/setup.ts.
+/**
+ * Продвигает фейковые часы до targetMs, срабатывая ровно по одному
+ * запланированному таймеру за раз (`vi.advanceTimersToNextTimer()`), каждый
+ * — в своём `act()`. Цепочка «таймер → setState → эффект планирует
+ * следующий таймер» (ChatReel копит сообщения именно так) не долетает до
+ * следующего звена одним большим прыжком `advanceTimersByTime`: пока не
+ * выполнен React-эффект текущего шага, следующий таймер ещё не
+ * зарегистрирован — прыжок на весь интервал проматывает часы ДО того, как
+ * рождается следующий таймер, и цепочка глохнет на первом звене.
+ * Пофазовое продвижение (ровно по одному сработавшему таймеру) даёт React
+ * точку флаша между каждым звеном и при этом делает столько же `act()`,
+ * сколько реально таймеров в цепочке (единицы, не сотни).
+ */
+function advance(targetMs: number, maxSteps = 200): void {
+  const start = Date.now();
+  let steps = 0;
+  while (Date.now() - start < targetMs && steps < maxSteps) {
+    if (vi.getTimerCount() === 0) return;
+    act(() => {
+      vi.advanceTimersToNextTimer();
+    });
+    steps += 1;
+  }
+}
+
+/**
+ * Короткие искусственные сообщения — сама лента пролога (13 сообщений,
+ * реальные интервалы 900/350/1200мс) проверена содержательно в
+ * `content/content.test.ts`; здесь важна только механика накопления,
+ * таймеров и пропуска (docs/PLAN.md «Задача 4»).
+ */
+const messages: PrologueMessage[] = [
+  { id: 'm1', text: 'Первое сообщение.', delayMs: 100 },
+  { id: 'm2', text: 'Второе сообщение.', delayMs: 100 },
+  { id: 'm3', text: 'Третье сообщение.', delayMs: 100 },
+  { id: 'm4', text: 'Во всём виноват ты.', delayMs: 100, size: 'lg', tone: 'alarm' },
+];
+
+function renderReel(onDone: () => void = () => {}) {
+  return render(
+    <ChatReel messages={messages} skipHint="Тапни, чтобы пропустить" skipHintDelayMs={3000} onDone={onDone} />
+  );
+}
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -16,80 +57,56 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const MESSAGES: ChatMessage[] = [
-  { id: 'm1', text: 'Раз', author: 'client', behavior: 'delete' },
-  { id: 'm2', text: 'Два', author: 'client', behavior: 'delete' },
-  { id: 'b1', text: 'Бэ раз', author: 'client', behavior: 'burst' },
-  { id: 'b2', text: 'Бэ два', author: 'client', behavior: 'burst' },
-];
-
-/** Полная длительность естественного проигрывания MESSAGES целиком:
- *  2 delete-сообщения (show+remove каждое) + один burst-забег из 2
- *  (queue-задержка второго, затем общая show-пауза и общее remove) + финальная
- *  пауза перед onDone. Считается из тех же констант, что использует
- *  реализация — так тест проверяет контракт таймингов, а не дублирует магию. */
-const FULL_DURATION =
-  2 * (CHAT_REEL_TIMING.show + CHAT_REEL_TIMING.remove) +
-  (CHAT_REEL_TIMING.queue + CHAT_REEL_TIMING.show + CHAT_REEL_TIMING.remove) +
-  CHAT_REEL_TIMING.pause;
-
 describe('ChatReel', () => {
-  it('доигрывает сам — onDone вызывается ровно один раз', () => {
+  it('первое сообщение присутствует в DOM синхронно при монтировании', () => {
+    renderReel();
+    expect(screen.getByText('Первое сообщение.')).not.toBeNull();
+  });
+
+  it('onDone вызывается ровно один раз, когда лента доигрывает сама, и не повторяется дальше', () => {
     const onDone = vi.fn();
-    render(<ChatReel messages={MESSAGES} onDone={onDone} />);
+    renderReel(onDone);
 
-    vi.advanceTimersByTime(FULL_DURATION + 100);
-
+    advance(100 * 3 + 1000); // три интервала между сообщениями + тряска/вспышка/пауза
     expect(onDone).toHaveBeenCalledTimes(1);
 
-    // Дальнейшее течение времени не должно порождать повторных вызовов —
-    // цепочка таймеров сама себя останавливает после finish().
-    vi.advanceTimersByTime(5000);
+    advance(5000);
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 
-  it('размонтирование на середине не оставляет активных таймеров', () => {
-    const onDone = vi.fn();
-    const { unmount } = render(<ChatReel messages={MESSAGES} onDone={onDone} />);
+  it('после размонтирования на середине ленты не остаётся активных таймеров', () => {
+    const { unmount } = renderReel();
 
-    vi.advanceTimersByTime(CHAT_REEL_TIMING.show + 100);
+    advance(150); // где-то между вторым и третьим сообщением
     expect(vi.getTimerCount()).toBeGreaterThan(0);
 
     unmount();
-
-    expect(vi.getTimerCount()).toBe(0);
-    expect(onDone).not.toHaveBeenCalled();
-  });
-
-  it('skippable: тап по контейнеру мгновенно вызывает onDone', () => {
-    const onDone = vi.fn();
-    const { getByTestId } = render(<ChatReel messages={MESSAGES} onDone={onDone} skippable />);
-
-    fireEvent.click(getByTestId('chat-reel'));
-
-    expect(onDone).toHaveBeenCalledTimes(1);
-    // Реел остановлен целиком — ни один отложенный шаг больше не выстрелит.
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('тап после естественного завершения не вызывает onDone второй раз', () => {
-    const onDone = vi.fn();
-    const { getByTestId } = render(<ChatReel messages={MESSAGES} onDone={onDone} />);
+  it('тап мгновенно доигрывает ленту до обвинения', () => {
+    renderReel();
+    fireEvent.click(screen.getByText('Первое сообщение.'));
+    expect(screen.getByText('Во всём виноват ты.')).not.toBeNull();
+  });
 
-    vi.advanceTimersByTime(FULL_DURATION + 100);
+  it('повторный тап не вызывает onDone снова', () => {
+    const onDone = vi.fn();
+    renderReel(onDone);
+    const target = screen.getByText('Первое сообщение.');
+
+    fireEvent.click(target);
+    advance(1000); // доиграть тряску/вспышку до finish()
     expect(onDone).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(getByTestId('chat-reel'));
-
+    fireEvent.click(target);
+    advance(1000);
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 
-  it('skippable={false}: тап по контейнеру не пропускает реел', () => {
-    const onDone = vi.fn();
-    const { getByTestId } = render(<ChatReel messages={MESSAGES} onDone={onDone} skippable={false} />);
-
-    fireEvent.click(getByTestId('chat-reel'));
-
-    expect(onDone).not.toHaveBeenCalled();
+  it('после завершения ленты не остаётся активных таймеров', () => {
+    renderReel();
+    advance(100 * 3 + 1000);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

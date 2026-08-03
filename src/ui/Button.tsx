@@ -1,7 +1,7 @@
 import type { JSX, ReactNode } from 'react';
 import { cn } from '../lib/cn';
 
-type ButtonVariant = 'primary' | 'ghost' | 'evidence';
+type ButtonVariant = 'primary' | 'ghost';
 
 interface ButtonProps {
   children: ReactNode;
@@ -11,13 +11,22 @@ interface ButtonProps {
   hint?: string;
 }
 
+// primary: bg-toxic, не bg-signal. Токен --evidence, на который эта кнопка
+// когда-то ссылалась (variant 'evidence'), удалён вместе с прежним миром
+// (docs/PLAN.md «Задача 1») — прямой замены строкой на строку недостаточно:
+// --signal, которым primary красился до этой правки, в новой дисциплине
+// акцентов (SPEC.md §2.2) означает РОВНО ОДНО — текущее выделение выбора
+// интерактивного элемента (см. Choice.tsx), и ничего больше. Primary-кнопка
+// стоит почти на каждом экране — это не состояние выбора, а рабочее
+// действие, поэтому его цвет — --toxic: «жёлтый — рабочий цвет мира, а не
+// редкая улика» (главный сдвиг этой редизайн-волны). Текст --ink-900 на
+// --toxic — 12.34:1, см. отчёт задачи 2.
 // ghost: граница --edge (не --ink-600 — тот даёт 1.32:1 к фону, границы не
 // видно) + заливка --ink-800, иначе кнопка читается как строка текста без
 // намёка, что по ней можно нажать.
 const VARIANT_CLASS: Record<ButtonVariant, string> = {
-  primary: 'bg-signal text-ink-900',
+  primary: 'bg-toxic text-ink-900',
   ghost: 'border border-[var(--edge)] bg-ink-800 text-paper',
-  evidence: 'bg-evidence text-ink-900',
 };
 
 // Неактивное состояние раньше было тем же VARIANT_CLASS при opacity-40:
