@@ -1,0 +1,150 @@
+/* globals.css — reset, типографика, мост токенов в Tailwind v4.
+   Тема принудительно тёмная (SPEC.md §2.1) — тени не используются нигде,
+   глубина строится слоями фона --ink-900 -> --ink-800 -> --ink-700 и
+   волосяными границами --ink-600. */
+
+/* source() ограничивает автосканирование Tailwind папкой src — иначе он
+   подхватывает классоподобные токены из текста docs/*.md. */
+@import 'tailwindcss' source('../');
+@source '../../index.html';
+@import './tokens.css';
+
+/* Шрифты — self-hosted, вариативные начертания, кириллица, без внешних запросов
+   (SPEC.md §2.2, §7). index.css каждого пакета подключает все сабсеты,
+   включая cyrillic и cyrillic-ext. */
+@import '@fontsource-variable/oswald';
+@import '@fontsource-variable/onest';
+@import '@fontsource-variable/jetbrains-mono';
+@import '@fontsource-variable/caveat';
+
+@theme {
+  /* Цвета — мост к tokens.css. Имена namespaced Tailwind-ом (--color-*),
+     поэтому var()-ссылка на tokens.css не создаёт цикла. */
+  --color-ink-900: var(--ink-900);
+  --color-ink-800: var(--ink-800);
+  --color-ink-700: var(--ink-700);
+  --color-ink-600: var(--ink-600);
+  --color-fog: var(--fog);
+  --color-paper: var(--paper);
+  --color-signal: var(--signal);
+  --color-evidence: var(--evidence);
+  --color-alarm: var(--alarm);
+
+  /* Шрифты — имя переменной Tailwind (--font-*) совпадает с именем в
+     tokens.css дословно, поэтому здесь литерал, а не var(), иначе получится
+     циклическая CSS-переменная (--font-display: var(--font-display)). */
+  --font-display: 'Oswald Variable', 'Oswald', system-ui, sans-serif;
+  --font-body: 'Onest Variable', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+  --font-hand: 'Caveat Variable', cursive;
+
+  /* Шкала размеров — SPEC §2.2 */
+  --text-1: var(--fs-1);
+  --text-2: var(--fs-2);
+  --text-3: var(--fs-3);
+  --text-4: var(--fs-4);
+  --text-5: var(--fs-5);
+  --text-6: var(--fs-6);
+  --text-7: var(--fs-7);
+  --text-8: var(--fs-8);
+  --text-9: var(--fs-9);
+
+  /* Радиусы — SPEC §2.3 */
+  --radius-label: var(--r-label);
+  --radius-card: var(--r-card);
+  --radius-chip: var(--r-chip);
+
+  /* Отступы содержательного ритма */
+  --spacing-gutter: var(--gutter);
+}
+
+/* ---- Reset ----
+   Всё ниже завёрнуто в @layer base: без этого правила сброса и элементов
+   лежат вне каскадных слоёв Tailwind v4 (theme/base/components/utilities) и
+   по спецификации побеждают заслоённые утилиты независимо от специфичности —
+   `px-*`/`py-*`/`p-*` схлопывались в 0px, а `button { background: none;
+   border: none }` гасил заливку и рамку любой Button. `@import 'tailwindcss'`
+   уже объявляет порядок слоёв (theme, base, components, utilities); блок
+   `@layer base { ... }` здесь дописывается в уже существующий слой `base` в
+   том же порядке — и снова проигрывает `utilities`. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    /* Тема принудительно тёмная, тема клиента Telegram игнорируется (SPEC.md §2.1). */
+    color-scheme: dark;
+    background: var(--ink-900);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    min-height: 100dvh;
+    background: var(--ink-900);
+    color: var(--paper);
+    font-family: var(--font-body);
+    font-size: var(--fs-4);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
+  }
+
+  #root {
+    min-height: 100dvh;
+    /* Горизонтальная прокрутка запрещена нигде (SPEC.md §7) */
+    overflow-x: clip;
+  }
+
+  img,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  button,
+  input {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+  }
+
+  /* Длинный русский текст не должен ломать раскладку */
+  p,
+  h1,
+  h2,
+  h3,
+  span,
+  div {
+    overflow-wrap: anywhere;
+  }
+
+  /* ---- Фокус ---- */
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+  }
+
+  /* ---- Reduced motion (SPEC.md §2.4) ----
+     Декоративное движение выключается полностью; сюжетные сцены сохраняют
+     последовательность и тайминг, но без сдвигов и масштабирования — это
+     обрабатывается точечно в каждой анимации через useReducedMotion(),
+     этот блок — общая страховка для CSS-анимаций и transition. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
