@@ -20,6 +20,14 @@ const VARIANT_CLASS: Record<ButtonVariant, string> = {
   evidence: 'bg-evidence text-ink-900',
 };
 
+// Неактивное состояние раньше было тем же VARIANT_CLASS при opacity-40:
+// заливка варианта гасла вместе с текстом и границей, и на телефоне вечером
+// от кнопки не оставалось формы — читался серый текст, а не «кнопка, пока
+// недоступна» (см. отчёт финальной доводки, пункт про хвосты интерфейса).
+// Теперь disabled — отдельная, полностью непрозрачная палитра с явным
+// контуром --edge поверх --ink-800, а не производная варианта.
+const DISABLED_CLASS = 'cursor-not-allowed border border-[var(--edge)] bg-ink-800 text-fog';
+
 /**
  * Кнопка (SPEC.md §2.4, Задача 2). `disabled` не даёт нажатия и не вызывает
  * `onClick`, поэтому любой haptic, который навешивает вызывающий экран внутри
@@ -42,8 +50,7 @@ export function Button({
         className={cn(
           'w-full rounded-card px-6 py-4 text-center font-body text-4 font-medium',
           'transition-[transform,opacity] duration-[160ms] ease-[var(--ease-out)]',
-          disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer active:scale-[0.97]',
-          VARIANT_CLASS[variant]
+          disabled ? DISABLED_CLASS : cn('cursor-pointer active:scale-[0.97]', VARIANT_CLASS[variant])
         )}
       >
         {children}

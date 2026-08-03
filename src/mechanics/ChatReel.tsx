@@ -61,16 +61,36 @@ function burstRunStart(messages: ChatMessage[], index: number): number {
  * не больше одного таймера, и он всегда зарегистрирован в `timersRef` —
  * поэтому `finish()` (естественное завершение, скип, размонтирование)
  * гарантированно останавливает всю цепочку целиком.
+ *
+ * Контейнер — `flex-1` внутри родительского `Screen` (правка финальной
+ * доводки): без этого высота реела определялась только видимыми сообщениями,
+ * и на пустом экране (до первого сообщения — уже неактуально, но и между
+ * сообщениями) лента прижималась к верху экрана, а не к низу, как в
+ * настоящем мессенджере. `flex-1` + `justify-end` вместе дают ленту, растущую
+ * снизу вверх во всю доступную высоту.
  */
+/** Первое сообщение реела нужно на экране в кадре монтирования, а не после
+ *  первого эффекта (SPEC.md §4, экран 0; отчёт финальной доводки: «пролог
+ *  начинается с пустого экрана» — раньше `visible` стартовал пустым массивом,
+ *  и добавление первого сообщения происходило в `useEffect`, то есть отрисовкой
+ *  позже первого кадра). Ленивый инициализатор `useState` сеет то же самое
+ *  сообщение, которое иначе добавил бы `step(0)`, — эффект ниже это учитывает
+ *  через `skipAdd` и не дублирует его. */
+function seedFirstMessage(messages: ChatMessage[]): VisibleMessage[] {
+  const first = messages[0];
+  if (!first) return [];
+  return [{ id: first.id, text: first.text, author: first.author, phase: 'in' }];
+}
+
 export function ChatReel({ messages, onDone, skippable = true }: ChatReelProps): JSX.Element {
-  const [visible, setVisible] = useState<VisibleMessage[]>([]);
+  const [visible, setVisible] = useState<VisibleMessage[]>(() => seedFirstMessage(messages));
   const doneRef = useRef(false);
   const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
   const finishRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     doneRef.current = false;
-    setVisible([]);
+    setVisible(seedFirstMessage(messages));
 
     const timers = timersRef.current;
 
@@ -96,7 +116,7 @@ export function ChatReel({ messages, onDone, skippable = true }: ChatReelProps):
 
     finishRef.current = finish;
 
-    function step(index: number): void {
+    function step(index: number, skipAdd = false): void {
       if (doneRef.current) return;
 
       if (index >= messages.length) {
@@ -107,7 +127,9 @@ export function ChatReel({ messages, onDone, skippable = true }: ChatReelProps):
       const message = messages[index];
 
       if (message.behavior === 'delete') {
-        setVisible((v) => [...v, { id: message.id, text: message.text, author: message.author, phase: 'in' }]);
+        if (!skipAdd) {
+          setVisible((v) => [...v, { id: message.id, text: message.text, author: message.author, phase: 'in' }]);
+        }
         schedule(() => {
           setVisible((v) => v.map((item) => (item.id === message.id ? { ...item, phase: 'out' } : item)));
           schedule(() => {
@@ -119,7 +141,9 @@ export function ChatReel({ messages, onDone, skippable = true }: ChatReelProps):
       }
 
       if (message.behavior === 'burst') {
-        setVisible((v) => [...v, { id: message.id, text: message.text, author: message.author, phase: 'in' }]);
+        if (!skipAdd) {
+          setVisible((v) => [...v, { id: message.id, text: message.text, author: message.author, phase: 'in' }]);
+        }
         const isLastOfRun = messages[index + 1]?.behavior !== 'burst';
         if (!isLastOfRun) {
           schedule(() => step(index + 1), CHAT_REEL_TIMING.queue);
@@ -138,11 +162,15 @@ export function ChatReel({ messages, onDone, skippable = true }: ChatReelProps):
       }
 
       // hold — появляется и остаётся, реел идёт дальше без удаления.
-      setVisible((v) => [...v, { id: message.id, text: message.text, author: message.author, phase: 'in' }]);
+      if (!skipAdd) {
+        setVisible((v) => [...v, { id: message.id, text: message.text, author: message.author, phase: 'in' }]);
+      }
       schedule(() => step(index + 1), CHAT_REEL_TIMING.show);
     }
 
-    step(0);
+    // index 0 уже на экране благодаря seedFirstMessage выше — step(0, true)
+    // продолжает его таймлайн (показ/очередь/пауза), не добавляя повторно.
+    step(0, true);
 
     return () => {
       clearAll();
@@ -158,7 +186,7 @@ export function ChatReel({ messages, onDone, skippable = true }: ChatReelProps):
     <div
       data-testid="chat-reel"
       onClick={handleSkip}
-      className="flex min-h-[360px] flex-col justify-end gap-3 py-2"
+      className="flex min-h-[360px] flex-1 flex-col justify-end gap-3 py-2"
     >
       {visible.map((item) => (
         <ChatBubble key={item.id} author={item.author} state={item.phase === 'out' ? 'out' : 'in'}>

@@ -4,16 +4,21 @@ import { BottomBar } from '../../ui/BottomBar';
 import { Button } from '../../ui/Button';
 import { Display } from '../../ui/Display';
 import { Prose } from '../../ui/Prose';
+import { Sticker } from '../../ui/Sticker';
 import { env } from '../../lib/env';
 import { openLink } from '../../lib/telegram';
 import {
   LEVER_CARDS,
   OFFER_BUTTON,
-  OFFER_GAP_PARAGRAPHS,
+  OFFER_CLOSING_PARAGRAPH,
+  OFFER_GAP_PARAGRAPH,
+  OFFER_GAP_STICKER,
+  OFFER_INSIGHT_LINE,
   OFFER_INTRO,
+  OFFER_LEAD_PARAGRAPH,
   OFFER_LINK_PLACEHOLDER_HINT,
-  OFFER_PARAGRAPHS,
   OFFER_PRICE,
+  OFFER_SYSTEM_LABEL,
   PRACTICUM,
   SUPPORT_LINK_TEXT,
 } from '../../content/offer';
@@ -28,34 +33,45 @@ import { PracticumPath } from './PracticumPath';
  * ссылка. Блок поддержки не рендерится вовсе при пустом `env.support`.
  * Никаких таймеров и счётчиков мест — экран продажи не должен выглядеть
  * дешевле остальных (см. отчёт задачи 6).
+ *
+ * Грамматика дела вместо десяти абзацев одинаковой прозы (отчёт финальной
+ * доводки, пункт 3): системная метка + крупный заголовок вместо первого
+ * абзаца, карточки рычагов пронумерованы как досье, вывод-инсайт крупнее
+ * рядовой прозы, короткая фраза-затравка перед разрывом подана стикером, путь
+ * практикума — визуальная последовательность, а цена с кнопкой собраны одним
+ * блоком внутри `BottomBar`, а не разнесены по потоку экрана. Текст везде тот
+ * же, что и раньше, — доказательство читается по `docs/SPEC.md` §4.
  */
 export function OfferScreen(): JSX.Element {
   const hasCheckout = env.checkout.length > 0;
   const hasSupport = env.support.length > 0;
 
   return (
-    <Screen>
-      <Prose>{OFFER_INTRO}</Prose>
+    <Screen label={OFFER_SYSTEM_LABEL}>
+      <Display size="lg">{OFFER_INTRO}</Display>
       <LeverCards cards={LEVER_CARDS} />
-      {OFFER_PARAGRAPHS.map((paragraph) => (
-        <Prose key={paragraph}>{paragraph}</Prose>
-      ))}
-      {OFFER_GAP_PARAGRAPHS.map((paragraph) => (
-        <Prose key={paragraph}>{paragraph}</Prose>
-      ))}
-      <PracticumPath name={PRACTICUM.name} steps={PRACTICUM.steps} closingLine={PRACTICUM.closingLine} />
-      <Display size="lg" tone="evidence">
-        {OFFER_PRICE}
+      <Prose>{OFFER_LEAD_PARAGRAPH}</Prose>
+      <Display size="md" tone="signal">
+        {OFFER_INSIGHT_LINE}
       </Display>
+      <Prose>{OFFER_CLOSING_PARAGRAPH}</Prose>
+      <Sticker index={2}>{OFFER_GAP_STICKER}</Sticker>
+      <Prose>{OFFER_GAP_PARAGRAPH}</Prose>
+      <PracticumPath name={PRACTICUM.name} steps={PRACTICUM.steps} closingLine={PRACTICUM.closingLine} />
       <BottomBar>
-        <Button
-          variant="evidence"
-          onClick={hasCheckout ? () => openLink(env.checkout) : undefined}
-          disabled={!hasCheckout}
-          hint={hasCheckout ? undefined : OFFER_LINK_PLACEHOLDER_HINT}
-        >
-          {OFFER_BUTTON}
-        </Button>
+        <div className="flex flex-col gap-3 rounded-card border border-[var(--edge)] bg-ink-800 p-4">
+          <Display size="md" tone="evidence">
+            {OFFER_PRICE}
+          </Display>
+          <Button
+            variant="evidence"
+            onClick={hasCheckout ? () => openLink(env.checkout) : undefined}
+            disabled={!hasCheckout}
+            hint={hasCheckout ? undefined : OFFER_LINK_PLACEHOLDER_HINT}
+          >
+            {OFFER_BUTTON}
+          </Button>
+        </div>
         {hasSupport ? (
           <button
             type="button"

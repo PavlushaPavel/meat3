@@ -1,4 +1,4 @@
-import { useCallback, useState, type JSX } from 'react';
+import { useCallback, useEffect, useState, type JSX } from 'react';
 import { motion } from 'motion/react';
 import { Screen } from '../../ui/Screen';
 import { BottomBar } from '../../ui/BottomBar';
@@ -17,7 +17,14 @@ import {
   PROLOGUE_CHAT_HEADER,
   PROLOGUE_QUESTION,
   PROLOGUE_REEL,
+  PROLOGUE_SKIP_HINT,
 } from '../../content';
+
+/** Подсказка о пропуске реела всплывает не сразу — иначе она перетягивает
+ *  внимание с первого кадра чата (SPEC.md §2.4, дух правила про сюжетные
+ *  сцены). Число не из SPEC.md дословно — интерпретация «секунды через три»
+ *  из отчёта финальной доводки. */
+const SKIP_HINT_DELAY_MS = 3000;
 
 /** Реел = 6 delete-сообщений, затем забег из 5 burst-сообщений — порядок из
  *  SPEC.md §4 экран 0. Модульная константа: одна и та же ссылка на каждом
@@ -29,15 +36,31 @@ const REEL_MESSAGES = [...PROLOGUE_REEL, ...PROLOGUE_BURST];
  * `onDone`; ровно в этот момент — `haptics.heavy()` (обвинение, SPEC.md §2.4)
  * и появление крупного «Во всём виноват ты.» + вопрос + кнопка в BottomBar
  * (во всю ширину, как того просит сценарий).
+ *
+ * Статус «печатает...» живёт только пока реел играет и гаснет ровно в момент
+ * `handleReelDone` — вместе с приходом обвинения, как в настоящем
+ * мессенджере (отчёт финальной доводки: раньше он висел и после того, как
+ * сообщение уже пришло).
+ *
+ * Подсказка о пропуске появляется через `SKIP_HINT_DELAY_MS` и гаснет либо
+ * при пропуске, либо при естественном завершении реела — оба случая уже
+ * схлопнуты в один и тот же `revealed`, поэтому подсказке достаточно
+ * проверить `!revealed`.
  */
 export function PrologueChatScreen(): JSX.Element {
   const goNext = useCase((s) => s.goNext);
   const reduced = useReducedMotion();
   const [revealed, setRevealed] = useState(false);
+  const [showSkipHint, setShowSkipHint] = useState(false);
 
   const handleReelDone = useCallback((): void => {
     setRevealed(true);
     haptics.heavy();
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowSkipHint(true), SKIP_HINT_DELAY_MS);
+    return () => window.clearTimeout(timer);
   }, []);
 
   return (
@@ -49,10 +72,21 @@ export function PrologueChatScreen(): JSX.Element {
             {PROLOGUE_CHAT_HEADER.role}
           </span>
         </p>
-        <SystemLabel>{PROLOGUE_CHAT_HEADER.status}</SystemLabel>
+        {!revealed ? <SystemLabel>{PROLOGUE_CHAT_HEADER.status}</SystemLabel> : null}
       </header>
 
       <ChatReel messages={REEL_MESSAGES} onDone={handleReelDone} />
+
+      {!revealed && showSkipHint ? (
+        <motion.p
+          initial={reduced ? { opacity: 0 } : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: reduced ? 0.2 : 0.4 }}
+          className="text-center font-body text-2 text-fog"
+        >
+          {PROLOGUE_SKIP_HINT}
+        </motion.p>
+      ) : null}
 
       {revealed ? (
         <BottomBar>
