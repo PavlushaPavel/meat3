@@ -9,7 +9,7 @@ Telegram Mini App — воронка-прогрев для перформанс-
 слабым сообщением → и вся логика умирает после клика, если посадочная её не
 продолжает.
 
-Живой адрес: https://pavlushapavel.github.io/meat2/
+Живой адрес: https://pavlushapavel.github.io/meat3/
 
 ## Документы
 
@@ -84,7 +84,7 @@ GitHub Actions → GitHub Pages, ветка `main`. Workflow прогоняет 
 `due to in progress deployment`. Порядок разбора:
 
 1. Отменить застрявший деплой явно:
-   `POST /repos/PavlushaPavel/meat2/pages/deployments/<sha>/cancel`
+   `POST /repos/PavlushaPavel/meat3/pages/deployments/<sha>/cancel`
 2. Сделать новый коммит — с новым хэшем создаётся новый деплой.
 
 Если очередь Pages стоит долго, есть запасной путь: публиковать собранный
