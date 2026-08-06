@@ -5,13 +5,13 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Выкладка идёт пушем в ветку gh-pages, поэтому нужна запись в содержимое.
-# Разрешения pages/id-token больше не нужны: очередь Pages-деплоя из Actions
-# не используется (см. комментарий у шага публикации).
+# Права, которые нужны деплою Pages из Actions
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
-# Параллельные выкладки не нужны: держим одну активную, но не рвём уже идущую
+# Параллельные деплои не нужны: держим один активный, но не рвём уже идущий
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -63,30 +63,23 @@ jobs:
         # под именем 404.html делает маршрут /meat2/... рабочим при прямом заходе.
         run: cp dist/index.html dist/404.html
 
-      - name: Publish to gh-pages
-        # Публикуем пушем в ветку, а НЕ через actions/deploy-pages.
-        #
-        # Почему: 06.08.2026 очередь Pages-деплоя из Actions переставала
-        # забирать готовый артефакт. Экшен ждёт максимум 10 минут — это его
-        # жёсткий потолок, увеличить нельзя (`timeout value is greater than
-        # the allowed maximum`), — после чего САМ отменяет деплой. Отменённый
-        # деплой затем блокирует все следующие, потому что его идентификатор
-        # равен хэшу коммита, и выкладка встаёт намертво.
-        #
-        # Пуш в ветку идёт через отдельный конвейер Pages и от этой очереди не
-        # зависит. Чтобы вернуться на прежнюю схему: восстановить шаги
-        # configure-pages/upload-pages-artifact/deploy-pages, вернуть
-        # разрешения pages+id-token и переключить источник Pages обратно на
-        # GitHub Actions в настройках репозитория.
-        run: |
-          cd dist
-          # .nojekyll обязателен: без него Pages прогоняет выкладку через
-          # Jekyll и выбрасывает всё, что начинается с подчёркивания.
-          touch .nojekyll
-          git init -q
-          git checkout -q -b gh-pages
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -q -m "Выкладка ${{ github.sha }}"
-          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+        # Таймаут НЕ задаём: 10 минут — жёсткий потолок экшена, он обрезает
+        # любое большее значение предупреждением `timeout value is greater
+        # than the allowed maximum`. Если очередь Pages снова встанет, экшен
+        # отменит деплой сам, и следующая попытка упрётся в отменённый деплой
+        # того же хэша — лечится `POST /repos/{o}/{r}/pages/deployments/{sha}/
+        # cancel` и новым коммитом. Подробности — в README, раздел «Выкладка».
