@@ -47,10 +47,10 @@ jobs:
         # /meat2/prefreim/assets/ и давал белый экран.
         run: npm run build -- --base=/${{ github.event.repository.name }}/
         env:
-          # Переменные сборки. Пустые значения безопасны: приложение показывает
-          # честные заглушки вместо падения (SPEC.md §5).
-          VITE_VIDEO_1A_URL: ${{ vars.VITE_VIDEO_1A_URL }}
-          VITE_VIDEO_1B_URL: ${{ vars.VITE_VIDEO_1B_URL }}
+          # Переменные сборки. Пустые значения безопасны: слот видео показывает
+          # честное «материал пока не подключён», кнопка на внешний ресурс
+          # становится неактивной с подписью (docs/SPEC.md §3.5, §3.6).
+          VITE_VIDEO_1_URL: ${{ vars.VITE_VIDEO_1_URL }}
           VITE_VIDEO_2_URL: ${{ vars.VITE_VIDEO_2_URL }}
           VITE_VIDEO_3_URL: ${{ vars.VITE_VIDEO_3_URL }}
           VITE_ASSISTANT_AUDIENCE_URL: ${{ vars.VITE_ASSISTANT_AUDIENCE_URL }}

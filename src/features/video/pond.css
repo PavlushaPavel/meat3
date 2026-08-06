@@ -1,0 +1,42 @@
+/**
+ * Капли, стекающие из-под пруда (docs/SPEC.md §1 «Пруд наверху», §3.5).
+ *
+ * Локальный файл экрана видео — глобальные токены и globals.css не трогаем,
+ * движение принадлежит своему экрану. Без `@layer`: `.pond-drop` — собственное
+ * имя класса, ни на одном элементе рядом с ним нет Tailwind-утилиты, которая
+ * тоже задавала бы `animation`/`opacity`/`transform`, так что войны за
+ * специфичность (та самая ловушка незаслоённых правил из globals.css) здесь
+ * возникнуть не может — слой не нужен. `@layer` к тому же не по зубам
+ * CSS-парсеру jsdom (`Could not parse CSS stylesheet` при любом вложении —
+ * проверено отдельно), так что отказ от него ещё и убирает чистый шум в тестах.
+ *
+ * `prefers-reduced-motion: reduce` отключается чистым CSS-медиа-запросом, без
+ * JS: он живой сам по себе и реагирует на смену настройки в рантайме. Капля
+ * остаётся видимой (не исчезает), просто не течёт — экран не перестаёт
+ * читаться как пруд.
+ */
+.pond-drop {
+  animation: pond-drip 1.6s var(--ease-fall) infinite;
+}
+
+@keyframes pond-drip {
+  0% {
+    transform: translateY(-2px);
+    opacity: 0.3;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(11px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pond-drop {
+    animation: none;
+    opacity: 0.85;
+    transform: none;
+  }
+}

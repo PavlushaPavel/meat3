@@ -1,20 +1,39 @@
-import type { ComponentType } from 'react';
-import type { StepId } from './flow';
-import { ACTS_A } from './actsA';
-import { ACTS_B } from './actsB';
+import type { ReactElement } from 'react';
+import { longread1, longread2, longread3, longread4 } from '@/content/longreads';
+import { video1 } from '@/content/videos';
+import type { StepKey } from './flow';
+import { ChatScreen } from '@/features/chat/ChatScreen';
+import { LongreadScreen } from '@/features/longread/LongreadScreen';
+import { SituationScreen } from '@/features/situation/SituationScreen';
+import { VideoScreen } from '@/features/video/VideoScreen';
+import { BuyersScreen } from '@/features/buyers/BuyersScreen';
+import { QuizScreen, VerdictScreen } from '@/features/quiz/QuizScreen';
+import { OfferScreen } from '@/features/offer/OfferScreen';
+import {
+  AudienceLeverScreen,
+  LandingLeverScreen,
+  OfferLeverScreen,
+} from '@/features/levers/LeverScreens';
 
 /**
- * Собирается слиянием двух диапазонов актов: A = шаги 0..5, B = шаги 6..13
- * (SPEC.md §3) — намеренное разделение на два файла, чтобы задачи 4 и 5
- * работали параллельно, каждая владея своим файлом (docs/PLAN.md «Задача 1»).
- * `satisfies Record<StepId, ComponentType>` (а не `:`-аннотация) — так же
- * намеренно: ACTS_A/ACTS_B сохраняют точные наборы ключей (см. комментарий в
- * actsA.ts), поэтому спред здесь несёт для компилятора реальную информацию о
- * том, какие 14 ключей фактически присутствуют. Если какой-то StepId не
- * покрыт ни одним актом, `satisfies` проваливает `npm run typecheck` —
- * приложение не соберётся, а не упадёт в рантайме на середине маршрута.
+ * Какой экран показывается на каждом шаге маршрута (docs/SPEC.md §2).
+ *
+ * Только сопоставление шага и экрана: сами экраны живут в `src/features/*`,
+ * копирайт — в `src/content/*`. Здесь нет ни того, ни другого.
  */
-export const REGISTRY = {
-  ...ACTS_A,
-  ...ACTS_B,
-} satisfies Record<StepId, ComponentType>;
+export const SCREENS: Record<StepKey, () => ReactElement> = {
+  chat: () => <ChatScreen />,
+  long1: () => <LongreadScreen content={longread1} />,
+  situation: () => <SituationScreen />,
+  video1: () => <VideoScreen content={video1} />,
+  buyers: () => <BuyersScreen />,
+  video1end: () => <AudienceLeverScreen />,
+  long2: () => <LongreadScreen content={longread2} />,
+  video2: () => <OfferLeverScreen />,
+  long3: () => <LongreadScreen content={longread3} />,
+  quiz: () => <QuizScreen />,
+  verdict: () => <VerdictScreen />,
+  video3: () => <LandingLeverScreen />,
+  long4: () => <LongreadScreen content={longread4} />,
+  offer: () => <OfferScreen />,
+};

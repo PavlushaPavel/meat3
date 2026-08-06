@@ -1,37 +1,52 @@
-import type { JSX } from 'react';
-import { useFunnel } from '../../store/funnel';
-import type { VideoScreenContent } from '../../content';
-import { Screen } from '../../ui/Screen';
-import { Display } from '../../ui/Display';
-import { SystemLabel } from '../../ui/SystemLabel';
-import { VideoSlot } from '../../ui/VideoSlot';
-import { Button } from '../../ui/Button';
-import { BottomBar } from '../../ui/BottomBar';
-
-interface VideoScreenProps {
-  content: VideoScreenContent;
-}
+import { env } from '@/lib/env';
+import type { VideoContent } from '@/content/types';
+import { videoEmptyLabel } from '@/content/videos';
+import { Blocks } from '@/ui/Blocks';
+import { Button } from '@/ui/Button';
+import { CurvedHeading } from '@/ui/CurvedHeading';
+import { Surface } from '@/ui/Surface';
+import { useStepNav } from '@/router/useStepNav';
+import { Pond } from './Pond';
 
 /**
- * Общий компонент на экраны 2, 4, 7 и 11 (SPEC.md §4; docs/PLAN.md «Задача
- * 4»). Полностью описывается записью `VideoScreenContent` (src/content/videos.ts)
- * — метка части, заголовок, слот видео, хронометраж (если задан), кодовое
- * слово под заглушкой (передаётся `VideoSlot` через `content.note`, сам
- * компонент его текст не знает) и кнопка. Ничего не завязано на конкретный
- * id экрана — экраны 7 и 11 (задача 5) переиспользуют этот же файл, не
- * дублируя разметку.
+ * Экран видео — «пруд наверху» (docs/SPEC.md §1, §3.5).
+ *
+ * Записей пока нет — это нормальное рабочее состояние, а не ошибка: пруд
+ * стоит неподвижно и честно говорит об этом, кнопка «дальше» всё равно
+ * доступна. Битого плеера, вечного спиннера и белого экрана быть не может.
+ * Смысл фрагмента лежит под прудом на облачной бумаге — человек, который
+ * сейчас не может посмотреть видео, всё равно проходит воронку и получает
+ * смену картины мира.
  */
-export function VideoScreen({ content }: VideoScreenProps): JSX.Element {
-  const goNext = useFunnel((s) => s.goNext);
+export function VideoScreen({
+  content,
+  onNext,
+}: {
+  content: VideoContent;
+  onNext?: () => void;
+}) {
+  const { next } = useStepNav();
+  const src = env.video[content.envVar];
 
   return (
-    <Screen label={content.partLabel}>
-      <Display size="lg">{content.title}</Display>
-      <VideoSlot envVar={content.videoEnvVar} note={content.note} />
-      {content.duration ? <SystemLabel>{content.duration}</SystemLabel> : null}
-      <BottomBar>
-        <Button onClick={goNext}>{content.button}</Button>
-      </BottomBar>
-    </Screen>
+    <div className="flex flex-col gap-6 px-4 pb-10 pt-2">
+      <CurvedHeading text={content.title} law={content.law} size="md" level={1} />
+
+      <p className="font-legend text-legend uppercase tracking-[0.08em] text-moss-veil">
+        {content.standfirst}
+      </p>
+
+      <Pond law={content.law} src={src} title={content.title} emptyLabel={videoEmptyLabel} />
+
+      <Surface kind="paper" as="article" className="mx-auto w-full">
+        <Blocks blocks={content.blocks} />
+      </Surface>
+
+      <div className="mx-auto w-full max-w-prose">
+        <Button law={content.law} full onClick={onNext ?? next}>
+          {content.next}
+        </Button>
+      </div>
+    </div>
   );
 }

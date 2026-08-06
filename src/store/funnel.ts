@@ -1,237 +1,145 @@
 import { create } from 'zustand';
-import { persist, type PersistStorage, type StorageValue } from 'zustand/middleware';
-import { FLOW } from '../router/flow';
+import { persist } from 'zustand/middleware';
+import { LIVES } from '../content/quiz';
+import type { QuizTopic } from '../content/types';
+import { REVIEW_TARGET, type StepKey } from '../router/flow';
 
-/** Последний индекс маршрута — производный от FLOW, не второй хардкод (SPEC.md §3). */
-const LAST_STEP = FLOW.length - 1;
+/**
+ * Состояние прохождения воронки.
+ *
+ * Бэкенда нет: всё живёт в браузере и никуда не отправляется. Сохранение нужно
+ * ровно для одного — чтобы человек, закрывший мини-апп на середине, вернулся
+ * туда же, а не начал заново с чата клиента.
+ */
 
-/** Число вопросов квиза и число жизней — SPEC.md §4, экран 9 («Пять ситуаций. Три жизни.»). */
-const QUIZ_QUESTIONS = 5;
-const QUIZ_START_LIVES = 3;
+/** Три рычага, которые человек забирает по ходу воронки. */
+export type LeverId = 'audience' | 'offer' | 'landing';
 
-export interface FunnelData {
-  step: number; // текущий шаг маршрута, 0..13
-  maxStep: number; // максимально достигнутый
-  tool: string | null; // экран 1
-  castPick: string | null; // экран 3
-  siteAnswer: string | null; // экран 6
-  unlocked: string[]; // 'audience' | 'offer'
-  quizIndex: number; // 0..5
-  quizLives: number; // 0..3
-  quizDone: boolean;
-  objectionsSeen: string[]; // экран 13
-}
+interface FunnelState {
+  step: StepKey;
+  /** Открытые рычаги. Показываются в индикаторе на всех экранах. */
+  levers: LeverId[];
+  /** Что человек отметил в выборе ситуации. Ни на что не влияет — это честно. */
+  situation: string[];
+  /** Кого выбрал из пяти покупателей. */
+  buyer: string | null;
 
-export interface FunnelState extends FunnelData {
-  goNext: () => void;
-  goBack: () => void;
-  setTool: (id: string) => void;
-  setCastPick: (id: string) => void;
-  setSiteAnswer: (id: string) => void;
-  unlock: (id: string) => void;
-  answerQuiz: (correct: boolean) => void;
-  resetQuiz: () => void;
-  seeObjection: (id: string) => void;
+  // --- Тест ---
+  lives: number;
+  /** Индексы вопросов в текущем проходе: перемешиваются при повторе. */
+  order: number[];
+  /** Позиция в `order`. */
+  cursor: number;
+  /** Сколько ошибок в каждой теме — по ним выбираем, что пересматривать. */
+  mistakes: Record<QuizTopic, number>;
+  /** Куда вернуть человека после пересмотра фрагмента. */
+  returnTo: StepKey | null;
+
+  goTo: (step: StepKey) => void;
+  unlock: (lever: LeverId) => void;
+  toggleSituation: (id: string) => void;
+  chooseBuyer: (id: string) => void;
+
+  startQuiz: (questionCount: number) => void;
+  answer: (correct: boolean, topic: QuizTopic) => void;
+  /** Тема, в которой человек ошибался больше. При равенстве — `audience`. */
+  weakestTopic: () => QuizTopic;
+  /** Уйти пересматривать фрагмент: запоминает, что вернуться надо в тест. */
+  reviewFragment: (topic: QuizTopic) => void;
+  /** Вернуться в тест с полными жизнями и перемешанными вопросами. */
+  restartQuiz: (questionCount: number) => void;
   reset: () => void;
 }
 
-const initialData: FunnelData = {
-  step: 0,
-  maxStep: 0,
-  tool: null,
-  castPick: null,
-  siteAnswer: null,
-  unlocked: [],
-  quizIndex: 0,
-  quizLives: QUIZ_START_LIVES,
-  quizDone: false,
-  objectionsSeen: [],
-};
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+/** Перемешивание Фишера — Йетса. Порядок вопросов при повторе должен меняться. */
+function shuffled(count: number): number[] {
+  const list = Array.from({ length: count }, (_, i) => i);
+  for (let i = list.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
 }
 
-function isStepInRange(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= LAST_STEP;
-}
-
-function isQuizIndexInRange(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= QUIZ_QUESTIONS;
-}
-
-function isQuizLivesInRange(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= QUIZ_START_LIVES;
-}
-
-function isNullableString(value: unknown): value is string | null {
-  return value === null || typeof value === 'string';
-}
-
-function isBoolean(value: unknown): value is boolean {
-  return typeof value === 'boolean';
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === 'string');
-}
-
-/**
- * Приводит произвольный unknown (то, чем реально может оказаться содержимое
- * localStorage: синтаксически валидный JSON произвольной формы, устаревшая
- * схема, ручная правка) к FunnelData. Каждое поле проверяется отдельно по
- * типу и диапазону (step/maxStep — 0..LAST_STEP, quizIndex — 0..5, quizLives —
- * 0..3, unlocked/objectionsSeen — массивы строк); несоответствующее поле
- * заменяется значением из initialData поштучно — одно испорченное поле
- * (например голый `step: 99` или `quizLives: 17`) не стирает остальные
- * сохранённые ответы. Каждое поле проходит через type guard, `as`/`any` не
- * используются нигде в этой функции.
- */
-function toFunnelData(persisted: unknown): FunnelData {
-  const source = isRecord(persisted) ? persisted : {};
-
-  return {
-    step: isStepInRange(source.step) ? source.step : initialData.step,
-    maxStep: isStepInRange(source.maxStep) ? source.maxStep : initialData.maxStep,
-    tool: isNullableString(source.tool) ? source.tool : initialData.tool,
-    castPick: isNullableString(source.castPick) ? source.castPick : initialData.castPick,
-    siteAnswer: isNullableString(source.siteAnswer) ? source.siteAnswer : initialData.siteAnswer,
-    unlocked: isStringArray(source.unlocked) ? source.unlocked : initialData.unlocked,
-    quizIndex: isQuizIndexInRange(source.quizIndex) ? source.quizIndex : initialData.quizIndex,
-    quizLives: isQuizLivesInRange(source.quizLives) ? source.quizLives : initialData.quizLives,
-    quizDone: isBoolean(source.quizDone) ? source.quizDone : initialData.quizDone,
-    objectionsSeen: isStringArray(source.objectionsSeen)
-      ? source.objectionsSeen
-      : initialData.objectionsSeen,
-  };
-}
-
-/**
- * Собственное хранилище поверх localStorage вместо стандартного
- * createJSONStorage: JSON.parse явно обёрнут в try/catch, поэтому повреждённый
- * или посторонний контент (например `'{не json'`) гарантированно даёт `null`
- * (= начальное состояние), а не бросает исключение при гидратации (SPEC.md §6).
- * Содержимое `state` при этом здесь не валидируется по полям — оно может быть
- * синтаксически корректным JSON произвольной формы (например `{"step":99}`).
- * Настоящая валидация полей — в `merge` ниже, а не здесь и не только в
- * `migrate`: `migrate` вызывается zustand'ом ТОЛЬКО при несовпадении версии
- * персиста, а `merge` — всегда, при любой гидратации. Валидный JSON с
- * совпадающей версией и мусорным содержимым идёт именно через `merge`.
- */
-const safeStorage: PersistStorage<FunnelData> = {
-  getItem: (name) => {
-    try {
-      const raw = localStorage.getItem(name);
-      if (!raw) return null;
-      return JSON.parse(raw) as StorageValue<FunnelData>;
-    } catch {
-      return null;
-    }
-  },
-  setItem: (name, value) => {
-    try {
-      localStorage.setItem(name, JSON.stringify(value));
-    } catch {
-      // Приложение работает и без персиста (приватный режим, квота исчерпана).
-    }
-  },
-  removeItem: (name) => {
-    try {
-      localStorage.removeItem(name);
-    } catch {
-      // no-op
-    }
-  },
+const initial = {
+  step: 'chat' as StepKey,
+  levers: [] as LeverId[],
+  situation: [] as string[],
+  buyer: null as string | null,
+  lives: LIVES,
+  order: [] as number[],
+  cursor: 0,
+  mistakes: { audience: 0, offer: 0 } as Record<QuizTopic, number>,
+  returnTo: null as StepKey | null,
 };
 
 export const useFunnel = create<FunnelState>()(
   persist(
     (set, get) => ({
-      ...initialData,
+      ...initial,
 
-      goNext: () => {
-        const { step, maxStep } = get();
-        const next = Math.min(step + 1, LAST_STEP);
-        set({ step: next, maxStep: Math.max(maxStep, next) });
-      },
+      goTo: (step) => set({ step }),
 
-      goBack: () => {
-        const { step } = get();
-        set({ step: Math.max(step - 1, 0) });
-      },
+      unlock: (lever) =>
+        set((s) => (s.levers.includes(lever) ? s : { levers: [...s.levers, lever] })),
 
-      setTool: (id) => set({ tool: id }),
+      toggleSituation: (id) =>
+        set((s) => ({
+          situation: s.situation.includes(id)
+            ? s.situation.filter((x) => x !== id)
+            : [...s.situation, id],
+        })),
 
-      setCastPick: (id) => set({ castPick: id }),
+      chooseBuyer: (id) => set({ buyer: id }),
 
-      setSiteAnswer: (id) => set({ siteAnswer: id }),
-
-      unlock: (id) => {
-        const { unlocked } = get();
-        if (unlocked.includes(id)) return;
-        set({ unlocked: [...unlocked, id] });
-      },
-
-      // Неверный ответ — минус жизнь, разбор, следующий вопрос (SPEC.md §4,
-      // экран 9). Верный — тот же переход к следующему вопросу, без потери
-      // жизни. Достижение нуля жизней здесь НЕ перезапускает квиз само —
-      // экран видит quizLives === 0, показывает честную строку из контента и
-      // сам вызывает resetQuiz(). Это два разных действия намеренно (см.
-      // docs/PLAN.md «Задача 1», список тестов стора).
-      answerQuiz: (correct) => {
-        const { quizIndex, quizLives } = get();
-        const nextIndex = Math.min(quizIndex + 1, QUIZ_QUESTIONS);
-        const nextLives = correct ? quizLives : Math.max(quizLives - 1, 0);
+      startQuiz: (questionCount) =>
         set({
-          quizIndex: nextIndex,
-          quizLives: nextLives,
-          quizDone: nextIndex >= QUIZ_QUESTIONS,
-        });
+          lives: LIVES,
+          order: shuffled(questionCount),
+          cursor: 0,
+          mistakes: { audience: 0, offer: 0 },
+        }),
+
+      answer: (correct, topic) =>
+        set((s) => ({
+          lives: correct ? s.lives : Math.max(0, s.lives - 1),
+          cursor: s.cursor + 1,
+          mistakes: correct
+            ? s.mistakes
+            : { ...s.mistakes, [topic]: s.mistakes[topic] + 1 },
+        })),
+
+      // При равенстве ведём на «аудиторию»: она первична, офферы без неё
+      // не собираются.
+      weakestTopic: () => {
+        const { mistakes } = get();
+        return mistakes.offer > mistakes.audience ? 'offer' : 'audience';
       },
 
-      resetQuiz: () => set({ quizIndex: 0, quizLives: QUIZ_START_LIVES, quizDone: false }),
+      reviewFragment: (topic) =>
+        set({ step: REVIEW_TARGET[topic], returnTo: 'quiz' }),
 
-      seeObjection: (id) => {
-        const { objectionsSeen } = get();
-        if (objectionsSeen.includes(id)) return;
-        set({ objectionsSeen: [...objectionsSeen, id] });
-      },
+      restartQuiz: (questionCount) =>
+        set({
+          step: 'quiz',
+          returnTo: null,
+          lives: LIVES,
+          order: shuffled(questionCount),
+          cursor: 0,
+          mistakes: { audience: 0, offer: 0 },
+        }),
 
-      reset: () => set({ ...initialData }),
+      reset: () => set({ ...initial }),
     }),
     {
-      name: 'sostav-zayavki-v1',
-      version: 1,
-      storage: safeStorage,
-      partialize: (state): FunnelData => ({
-        step: state.step,
-        maxStep: state.maxStep,
-        tool: state.tool,
-        castPick: state.castPick,
-        siteAnswer: state.siteAnswer,
-        unlocked: state.unlocked,
-        quizIndex: state.quizIndex,
-        quizLives: state.quizLives,
-        quizDone: state.quizDone,
-        objectionsSeen: state.objectionsSeen,
-      }),
-      // Несовпадение версии — молча начальное состояние, без попытки угадать
-      // форму устаревших данных (SPEC.md §6). migrate вызывается только когда
-      // версия в сторидже отличается от текущей — на случай совпадающей версии
-      // с мусорным содержимым см. merge ниже.
-      migrate: (persisted, version): FunnelData => {
-        if (version !== 1) return { ...initialData };
-        return toFunnelData(persisted);
-      },
-      // Выполняется при КАЖДОЙ гидратации, независимо от того, совпала версия
-      // или сработал migrate (это единственный такой хук у zustand/persist).
-      // Именно здесь ловится валидный JSON с совпадающей версией, но мусорным
-      // содержимым — например `{"state":{"step":99,...},"version":1}`: без
-      // этой валидации step:99 дошёл бы до FLOW[99] === undefined и уронил бы
-      // рендер белым экраном.
-      merge: (persistedState, currentState) => ({
-        ...currentState,
-        ...toFunnelData(persistedState),
+      name: 'meat2-funnel',
+      // Порядок вопросов и позицию в нём не сохраняем: возвращаться в середину
+      // теста через сутки бессмысленно, тест начинается заново.
+      partialize: (s) => ({
+        step: s.step,
+        levers: s.levers,
+        situation: s.situation,
+        buyer: s.buyer,
       }),
     }
   )

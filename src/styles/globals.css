@@ -1,111 +1,85 @@
-/* globals.css — reset, типографика, мост токенов в Tailwind v4.
-   Тема принудительно тёмная (SPEC.md §2.2) — тени не используются нигде,
-   глубина строится слоями фона --ink-900 -> --ink-800 -> --ink-700 и
-   волосяными границами --ink-600. */
-
-/* source() ограничивает автосканирование Tailwind папкой src — иначе он
-   подхватывает классоподобные токены из текста docs/*.md. */
-@import 'tailwindcss' source('../');
-@source '../../index.html';
+@import 'tailwindcss';
 @import './tokens.css';
+@import './fonts.css';
 
-/* Шрифты — self-hosted, вариативные начертания, кириллица, без внешних запросов
-   (SPEC.md §2.3, §7). index.css каждого пакета подключает все сабсеты,
-   включая cyrillic и cyrillic-ext. */
-@import '@fontsource-variable/oswald';
-@import '@fontsource-variable/onest';
-@import '@fontsource-variable/jetbrains-mono';
-
-@theme {
-  /* Цвета — мост к tokens.css. Имена namespaced Tailwind-ом (--color-*),
-     поэтому var()-ссылка на tokens.css не создаёт цикла. Ровно эти имена
-     обязаны давать рабочие утилиты bg, text и border с этим именем
-     (PLAN.md «Задача 1»: bg-toxic, text-toxic, text-lab, border-lab) —
-     проверено по собранному CSS и через getComputedStyle в браузере,
-     см. отчёт задачи 1. */
-  --color-ink-900: var(--ink-900);
-  --color-ink-800: var(--ink-800);
-  --color-ink-700: var(--ink-700);
-  --color-ink-600: var(--ink-600);
-  --color-fog: var(--fog);
-  --color-paper: var(--paper);
-  --color-signal: var(--signal);
-  --color-toxic: var(--toxic);
-  --color-lab: var(--lab);
-  --color-alarm: var(--alarm);
-
-  /* Шрифты — имя переменной Tailwind (--font-*) совпадает с именем в
-     tokens.css дословно, поэтому здесь литерал, а не var(), иначе получится
-     циклическая CSS-переменная (--font-display: var(--font-display)).
-     Рукописной гарнитуры (--font-hand) в этом мире нет — удалена вместе с
-     прежней воронкой-расследованием (SPEC.md §2.3). */
-  --font-display: 'Oswald Variable', 'Oswald', system-ui, sans-serif;
-  --font-body: 'Onest Variable', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
-
-  /* Шкала размеров — SPEC §2.3 */
-  --text-1: var(--fs-1);
-  --text-2: var(--fs-2);
-  --text-3: var(--fs-3);
-  --text-4: var(--fs-4);
-  --text-5: var(--fs-5);
-  --text-6: var(--fs-6);
-  --text-7: var(--fs-7);
-  --text-8: var(--fs-8);
-  --text-9: var(--fs-9);
-
-  /* Радиусы — SPEC §2.4 */
-  --radius-label: var(--r-label);
-  --radius-card: var(--r-card);
-  --radius-chip: var(--r-chip);
-  --radius-bubble: var(--r-bubble);
-
-  /* Отступы содержательного ритма */
-  --spacing-gutter: var(--gutter);
-}
-
-/* ---- Reset ----
-   Всё ниже завёрнуто в @layer base: без этого правила сброса и элементов
-   лежат вне каскадных слоёв Tailwind v4 (theme/base/components/utilities) и
-   по спецификации побеждают заслоённые утилиты независимо от специфичности —
-   `px-*`/`py-*`/`p-*` схлопывались в 0px, а `button { background: none;
-   border: none }` гасил заливку и рамку любой Button. `@import 'tailwindcss'`
-   уже объявляет порядок слоёв (theme, base, components, utilities); блок
-   `@layer base { ... }` здесь дописывается в уже существующий слой `base` в
-   том же порядке — и снова проигрывает `utilities`. */
+/**
+ * ЛОВУШКА (проверено осознанно, см. отчёт задачи по дизайн-системе):
+ * в Tailwind 4 незаслоённые правила (объявленные вне `@layer`) выигрывают у
+ * ЛЮБЫХ заслоённых утилит независимо от специфичности — утилиты Tailwind
+ * живут в `@layer utilities`, и в каскадных слоях специфичность внутри
+ * порядка слоёв не спасает. Если написать здесь `*, *::before, *::after {
+ * margin: 0; padding: 0 }` БЕЗ обёртки `@layer base`, это правило станет
+ * незаслоённым и перебьёт все утилиты вида `p-4`, `m-2` и т.п. — сборка,
+ * тесты, линт и типы при этом останутся зелёными, а `getComputedStyle`
+ * молча покажет `padding: 0px`. Поэтому весь сброс и базовые правила ниже
+ * обёрнуты в `@layer base`, и это доказано локальной сборкой:
+ * `@layer theme, base, components, utilities;` объявляется Tailwind первой
+ * строкой и фиксирует порядок слоёв независимо от места объявления — слой
+ * `base` гарантированно проигрывает `utilities`, только пока правило внутри
+ * него ЗАСЛОЕНО. Смотри npx @tailwindcss/cli проверку в истории задачи.
+ */
 @layer base {
   *,
   *::before,
   *::after {
     box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+    border-color: var(--color-moss-veil);
   }
 
   html {
-    /* Тема принудительно тёмная, тема клиента Telegram игнорируется (SPEC.md §2.2). */
     color-scheme: dark;
-    background: var(--ink-900);
+    background: var(--color-garden-ground);
+    /* Вертикальный экран Telegram Mini App — десктоп вторичен (PRODUCT.md). */
+    height: 100%;
+    /* Тач-устройство: без резинового оттягивания страницы и без жёлтой вспышки тапа. */
+    overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
   }
 
   body {
+    margin: 0;
     min-height: 100dvh;
-    background: var(--ink-900);
-    color: var(--paper);
+    height: 100%;
+    background: var(--color-garden-ground);
+    color: var(--color-orbit);
     font-family: var(--font-body);
-    font-size: var(--fs-4);
-    line-height: 1.55;
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    overscroll-behavior-y: none;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    /* Отключённый bounce на iOS/Telegram WebView поверх overscroll-behavior. */
+    overflow-x: hidden;
   }
 
   #root {
     min-height: 100dvh;
-    /* Горизонтальная прокрутка запрещена нигде (SPEC.md §7) */
-    overflow-x: clip;
+    /* Безопасные зоны Telegram Mini App: чёлка, домашняя полоса, клавиатура. */
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
   }
 
   img,
@@ -114,56 +88,92 @@
     max-width: 100%;
   }
 
-  button,
-  input {
-    font: inherit;
-    color: inherit;
-    background: none;
-    border: none;
+  ::selection {
+    background: var(--color-updraft);
+    color: var(--color-garden-deep);
   }
 
-  /* Длинный русский текст не должен ломать раскладку */
-  p,
-  h1,
-  h2,
-  h3,
-  span,
-  div {
-    overflow-wrap: anywhere;
+  /*
+   * Глубина земли (docs/SPEC.md §1 «Земля»): мягкий подсвет сверху, уход в
+   * `--garden-deep` к низу каждого экранного цикла, очень слабое зерно —
+   * земля перестаёт быть ровной заливкой, оставаясь той же плоской краской
+   * `--color-garden-ground` (`bg-garden-ground` в App.tsx). Это НЕ обход
+   * ловушки каскадных слоёв выше: `.bg-garden-ground` из App.tsx задаёт
+   * только `background-color` (утилита Tailwind, слой `utilities`) — здесь
+   * мы добавляем `background-image`, СОВСЕМ ДРУГОЕ свойство, поэтому нет
+   * конкуренции специфичности слоёв вообще: цвет и картинка красятся вместе,
+   * а не спорят за одно и то же объявление. Правило всё равно живёт внутри
+   * `@layer base`, как и весь сброс выше, — по той же причине, по которой
+   * это обязательно для отступов: правило вне `@layer` стало бы
+   * незаслоённым и выиграло бы у утилит независимо от того, воюет оно с
+   * ними за свойство или нет.
+   *
+   * Три СSS-слоя картинки (без растровых файлов):
+   *  1. SVG feTurbulence — тайловое зерно, инлайн data URI, альфа ~0.025.
+   *  2. Радиальный подсвет сверху — мховый оттенок, гаснет к середине.
+   *  3. Линейный уход в `--garden-deep` к низу каждого повтора 100vh —
+   *     буквальный «провал в глубину» тех же токенов (см. --color-garden-deep
+   *     в tokens.css), без единого нового цвета.
+   *
+   * Все три слоя статичны (не анимируются, никаких filter-переходов) и не
+   * используют `backdrop-filter` — стоимость кадра не растёт. Длинное чтение
+   * лежит на непрозрачной `--cloud-paper` карточке (`Surface kind="paper"`)
+   * поверх этого фона, поэтому контраст текста не задет.
+   */
+  .bg-garden-ground {
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+      radial-gradient(
+        ellipse 130% 46% at 50% 0%,
+        color-mix(in oklab, var(--color-moss-veil) 16%, transparent) 0%,
+        transparent 68%
+      ),
+      linear-gradient(
+        to bottom,
+        transparent 0%,
+        transparent 52%,
+        color-mix(in oklab, var(--color-garden-deep) 80%, transparent) 100%
+      );
+    background-repeat: repeat, repeat-y, repeat-y;
+    background-size: 140px 140px, 100% 100vh, 100% 100vh;
+    background-position: top left, top center, top center;
   }
 
-  /* ---- Фокус ---- */
-  :focus-visible {
-    outline: 2px solid var(--signal);
-    outline-offset: 2px;
+  /**
+   * Бумага облака — тоже материал, а не заливка.
+   *
+   * После того как земля получила зерно и глубину, единственной абсолютно
+   * плоской поверхностью осталась карточка длинного чтения, то есть главный
+   * объём контента: плоскость просто переехала с фона на передний план.
+   * Здесь тот же приём, что и у земли, но вдвое слабее — под чёрным текстом
+   * зерно обязано быть на грани заметности, иначе оно начнёт спорить с
+   * чтением. Контраст `--anchor` на `--cloud-paper` (15.9:1) не задет:
+   * правило трогает только `background-image`, цвет подложки остаётся за
+   * утилитой `bg-cloud-paper`, конкуренции слоёв нет.
+   */
+  .surface-paper-grain {
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.025 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E"),
+      radial-gradient(
+        ellipse 120% 60% at 50% 0%,
+        rgb(255 255 255 / 0.55) 0%,
+        transparent 60%
+      );
+    background-repeat: repeat, no-repeat;
+    background-size: 120px 120px, 100% 100%;
   }
 
-  /* ---- Reduced motion (SPEC.md §2.5) ----
-     Декоративное движение выключается полностью; сюжетные сцены сохраняют
-     последовательность и тайминг, но без сдвигов и масштабирования — это
-     обрабатывается точечно в каждой анимации через useReducedMotion(),
-     этот блок — общая страховка для CSS-анимаций и transition. */
+  /* Воронка держится на движении (SPEC.md §1), но обязана оставаться
+     проходимой при отключённой анимации — глобальный барьер поверх
+     точечных проверок prefers-reduced-motion в механике движения. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
-      animation-duration: 0.001ms !important;
+      animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
-      transition-duration: 0.001ms !important;
+      transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
-  }
-}
-
-/* ---- Утилита предупреждающей штриховки (SPEC.md §2.2, PLAN.md «Задача 1») ----
-   Узкая полоса-разделитель на границах разделов и над ценой — НЕ фон блока с
-   текстом (иначе текст не прочитать). Живёт в @layer utilities (а не base):
-   утилиты обязаны побеждать в каскаде, а не наоборот (см. комментарий у
-   @layer base выше — этот проект уже один раз потерял все отступы и заливки
-   из-за незаслоённого CSS). src/ui/HazardStripe.tsx (задача 2) применяет
-   этот класс на элементе фиксированной высоты. */
-@layer utilities {
-  .bg-hazard-stripe {
-    background-image: repeating-linear-gradient(45deg, var(--toxic) 0 5px, var(--ink-900) 5px 10px);
   }
 }

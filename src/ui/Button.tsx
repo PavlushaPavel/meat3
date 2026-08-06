@@ -1,77 +1,112 @@
-import type { JSX, ReactNode } from 'react';
-import { cn } from '../lib/cn';
-
-type ButtonVariant = 'primary' | 'ghost';
-
-interface ButtonProps {
-  children: ReactNode;
-  onClick?: () => void;
-  variant?: ButtonVariant;
-  disabled?: boolean;
-  hint?: string;
-}
-
-// primary: bg-toxic, не bg-signal. Токен --evidence, на который эта кнопка
-// когда-то ссылалась (variant 'evidence'), удалён вместе с прежним миром
-// (docs/PLAN.md «Задача 1») — прямой замены строкой на строку недостаточно:
-// --signal, которым primary красился до этой правки, в новой дисциплине
-// акцентов (SPEC.md §2.2) означает РОВНО ОДНО — текущее выделение выбора
-// интерактивного элемента (см. Choice.tsx), и ничего больше. Primary-кнопка
-// стоит почти на каждом экране — это не состояние выбора, а рабочее
-// действие, поэтому его цвет — --toxic: «жёлтый — рабочий цвет мира, а не
-// редкая улика» (главный сдвиг этой редизайн-волны). Текст --ink-900 на
-// --toxic — 12.34:1, см. отчёт задачи 2.
-// ghost: граница --edge (не --ink-600 — тот даёт 1.32:1 к фону, границы не
-// видно) + заливка --ink-800, иначе кнопка читается как строка текста без
-// намёка, что по ней можно нажать.
-const VARIANT_CLASS: Record<ButtonVariant, string> = {
-  primary: 'bg-toxic text-ink-900',
-  ghost: 'border border-[var(--edge)] bg-ink-800 text-paper',
-};
-
-// Неактивное состояние раньше было тем же VARIANT_CLASS при opacity-40:
-// заливка варианта гасла вместе с текстом и границей, и на телефоне вечером
-// от кнопки не оставалось формы — читался серый текст, а не «кнопка, пока
-// недоступна» (см. отчёт финальной доводки, пункт про хвосты интерфейса).
-// Первая правка (полностью непрозрачная палитра с контуром --edge поверх
-// --ink-800) оказалась регрессом: она буквально совпадает с VARIANT_CLASS.ghost
-// (та же сплошная граница --edge, та же заливка --ink-800) — разница только в
-// цвете текста. На UnlockScreen (экраны 9/14) настоящая ghost-кнопка стоит
-// рядом с заблокированной, и на глаз они неотличимы: палец жмёт в тупик.
-// Теперь disabled различается по форме, а не только по цвету текста:
-// пунктирная граница вместо сплошной и отсутствие заливки — «место под
-// кнопку, которое ещё не заполнено», совпадает по смыслу с миром воронки
-// (материал ещё не подшит к делу).
-const DISABLED_CLASS = 'cursor-not-allowed border border-dashed border-[var(--edge)] bg-transparent text-fog';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { cn } from '@/lib/cn';
+import type { Law } from '@/content/types';
 
 /**
- * Кнопка (SPEC.md §2.4, Задача 2). `disabled` не даёт нажатия и не вызывает
- * `onClick`, поэтому любой haptic, который навешивает вызывающий экран внутри
- * своего обработчика, тоже не сработает — Button ничего не решает за экран, а
- * просто не даёт дойти до обработчика. `:active` — только когда не disabled.
+ * Таблетка мира: скруглённая кнопка с каплевым столбцом справа.
+ *
+ * Каплевый столбец — не украшение: три капли показывают закон, под которым
+ * живёт действие, и это единственная форма кнопки во всём приложении.
+ * Стоковых кнопок в этом мире нет.
  */
+
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  children: ReactNode;
+  /** Основное действие экрана — одно на экран. */
+  tone?: 'primary' | 'quiet';
+  /** Закон, под которым живёт действие. Красит заливку и капли. */
+  law?: Law;
+  /** Растянуть на всю ширину — так живёт основное действие на телефоне. */
+  full?: boolean;
+}
+
+const LAW_FILL: Record<Law, string> = {
+  updraft: 'bg-updraft text-garden-deep',
+  deflect: 'bg-deflect text-garden-deep',
+  orbit: 'bg-orbit text-anchor',
+  // Чёрная заливка на тёмной земле сама по себе почти не видна: основное
+  // действие экрана обязано читаться, поэтому у ANCHOR есть светлый кант.
+  anchor: 'bg-anchor text-orbit ring-1 ring-moss-veil/45',
+};
+
+const LAW_INK: Record<Law, string> = {
+  updraft: 'text-updraft',
+  deflect: 'text-deflect',
+  orbit: 'text-orbit',
+  anchor: 'text-orbit',
+};
+
+/**
+ * Объём таблетки: тонкая светлая кромка сверху (роса на краю, изнутри —
+ * `inset`) плюс мягкая тень снизу (переиспользует существующий токен
+ * `--shadow-drop` из tokens.css, не заводит новый). Только активные
+ * состояния — недоступная таблетка остаётся плоским контуром нарочно (её
+ * задача не выглядеть как предмет, см. комментарий у `disabled` ниже).
+ */
+const ACTIVE_MATERIAL_SHADOW =
+  // Кромка 0,28 и мягкая тень читались приборно, но не глазом: на снимке
+  // таблетка оставалась плоским прямоугольником с радиусом. Кромка усилена,
+  // тень опущена и растянута — предмет, а не заливка. Мир матовый, поэтому
+  // глянцевого блика здесь по-прежнему нет.
+  'shadow-[inset_0_1px_0_0_rgba(231,232,228,0.42),inset_0_-1px_0_0_rgba(14,15,16,0.18),0_4px_14px_-4px_rgba(14,15,16,0.55)]';
+
+/** Каплевый столбец: три капли, падающие по закону кнопки. */
+function DropColumn({ law }: { law: Law }) {
+  return (
+    <span aria-hidden className="flex flex-col items-center gap-[3px] opacity-70">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className={cn(
+            'block rounded-full bg-current',
+            // Капли сужаются по ходу падения — у updraft порядок обратный.
+            law === 'updraft'
+              ? ['h-[3px] w-[3px]', 'h-[4px] w-[4px]', 'h-[5px] w-[5px]'][i]
+              : ['h-[5px] w-[5px]', 'h-[4px] w-[4px]', 'h-[3px] w-[3px]'][i],
+          )}
+        />
+      ))}
+    </span>
+  );
+}
+
 export function Button({
   children,
-  onClick,
-  variant = 'primary',
-  disabled = false,
-  hint,
-}: ButtonProps): JSX.Element {
+  tone = 'primary',
+  law = 'updraft',
+  full = false,
+  className,
+  disabled,
+  ...rest
+}: ButtonProps) {
   return (
-    <div className="flex flex-col items-center gap-2">
-      <button
-        type="button"
-        onClick={disabled ? undefined : onClick}
-        disabled={disabled}
-        className={cn(
-          'w-full rounded-card px-6 py-4 text-center font-body text-4 font-medium',
-          'transition-[transform,opacity] duration-[160ms] ease-[var(--ease-out)]',
-          disabled ? DISABLED_CLASS : cn('cursor-pointer active:scale-[0.97]', VARIANT_CLASS[variant])
-        )}
-      >
-        {children}
-      </button>
-      {disabled && hint ? <p className="font-body text-2 text-fog">{hint}</p> : null}
-    </div>
+    <button
+      {...rest}
+      disabled={disabled}
+      className={cn(
+        'group inline-flex items-center justify-between gap-4',
+        'rounded-full px-6 py-4 text-left',
+        'font-body text-base font-medium',
+        'transition-[transform,opacity,background-color] duration-200 ease-drift',
+        'active:scale-[0.985]',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-updraft',
+        // Неактивная кнопка обязана быть различимой, но НЕ похожей на рабочую:
+        // залитая таблетка на 45% прозрачности читается как живая при беглом
+        // просмотре, и человек считает, что действие доступно. Поэтому
+        // недоступное состояние — всегда контурное, без заливки.
+        disabled
+          ? cn('border border-dashed border-moss-veil/45 bg-transparent', LAW_INK[law])
+          : tone === 'primary'
+            ? LAW_FILL[law]
+            : cn('border border-moss-veil/40 bg-transparent', LAW_INK[law]),
+        !disabled && ACTIVE_MATERIAL_SHADOW,
+        disabled && 'pointer-events-none opacity-80',
+        full && 'w-full',
+        className,
+      )}
+    >
+      <span className="min-w-0">{children}</span>
+      <DropColumn law={law} />
+    </button>
   );
 }
