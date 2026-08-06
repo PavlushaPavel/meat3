@@ -1,45 +1,21 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { buyers, buyersConclusion, buyersPrompt } from '@/content/buyers';
 import { useFunnel } from '@/store/funnel';
 import { BuyersScreen } from './BuyersScreen';
 
 /**
- * Шаг 5: пять покупателей, пять законов, правильного ответа нет
- * (docs/SPEC.md §3.3).
+ * Шаг 5: пять покупателей ремонта, карточки дела в грейде акта III, правильного
+ * ответа нет (docs/SPEC.md §3.3).
  *
  * `useFunnel` — модульный singleton (zustand), выбор покупателя переживает
  * между тестами одного файла, если его не сбрасывать явно.
  *
- * Каждое облако несёт настоящий `GravityField` — тот же канвас, что рисует
- * фон воронки, только под законом конкретного покупателя. jsdom не реализует
- * `HTMLCanvasElement.prototype.getContext` (тот же пробел, что задокументирован
- * в `src/mechanics/GravityField.test.tsx`), поэтому он мокается и здесь —
- * иначе каждый рендер экрана сыплет одинаковый шум в stderr пять раз подряд.
+ * Карточки (`BuyerCard`) — обычная разметка на бумаге акта, без канваса и без
+ * побочных DOM API, которые jsdom не реализует, поэтому здесь не нужен мок
+ * `HTMLCanvasElement.prototype.getContext` (тот, что документирован в
+ * `src/mechanics/GravityField.test.tsx`, — это уже другой, снесённый мир).
  */
-function mockCanvasContext(): void {
-  const ctx = {
-    clearRect: vi.fn(),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    arc: vi.fn(),
-    fill: vi.fn(),
-    setTransform: vi.fn(),
-    fillStyle: '',
-    strokeStyle: '',
-    shadowColor: '',
-    shadowBlur: 0,
-    lineWidth: 0,
-    lineJoin: 'round',
-    lineCap: 'round',
-  };
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
-    () => ctx as unknown as CanvasRenderingContext2D,
-  );
-}
-
 function nextButton(): HTMLButtonElement {
   return screen.getByRole('button', { name: buyersPrompt.after }) as HTMLButtonElement;
 }
@@ -66,13 +42,11 @@ function pick(label: string): void {
 }
 
 beforeEach(() => {
-  mockCanvasContext();
   useFunnel.setState({ buyer: null });
 });
 
 afterEach(() => {
   cleanup();
-  vi.restoreAllMocks();
   useFunnel.setState({ buyer: null });
 });
 

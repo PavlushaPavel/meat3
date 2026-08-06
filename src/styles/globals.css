@@ -3,32 +3,36 @@
 @import './fonts.css';
 
 /**
- * ЛОВУШКА (проверено осознанно, см. отчёт задачи по дизайн-системе):
- * в Tailwind 4 незаслоённые правила (объявленные вне `@layer`) выигрывают у
- * ЛЮБЫХ заслоённых утилит независимо от специфичности — утилиты Tailwind
- * живут в `@layer utilities`, и в каскадных слоях специфичность внутри
- * порядка слоёв не спасает. Если написать здесь `*, *::before, *::after {
- * margin: 0; padding: 0 }` БЕЗ обёртки `@layer base`, это правило станет
- * незаслоённым и перебьёт все утилиты вида `p-4`, `m-2` и т.п. — сборка,
- * тесты, линт и типы при этом останутся зелёными, а `getComputedStyle`
- * молча покажет `padding: 0px`. Поэтому весь сброс и базовые правила ниже
- * обёрнуты в `@layer base`, и это доказано локальной сборкой:
- * `@layer theme, base, components, utilities;` объявляется Tailwind первой
- * строкой и фиксирует порядок слоёв независимо от места объявления — слой
- * `base` гарантированно проигрывает `utilities`, только пока правило внутри
- * него ЗАСЛОЕНО. Смотри npx @tailwindcss/cli проверку в истории задачи.
+ * ЛОВУШКА (проверено осознанно, унаследовано из прежней версии этого файла —
+ * см. историю задачи «Редизайн v3»): в Tailwind 4 незаслоённые правила
+ * (объявленные вне `@layer`) выигрывают у ЛЮБЫХ заслоённых утилит независимо
+ * от специфичности — утилиты Tailwind живут в `@layer utilities`, и в
+ * каскадных слоях специфичность внутри порядка слоёв не спасает. Если
+ * написать здесь `*, *::before, *::after { margin: 0; padding: 0 }` БЕЗ
+ * обёртки `@layer base`, это правило станет незаслоённым и перебьёт все
+ * утилиты вида `p-4`, `m-2`, `bg-scene` и т.п. — сборка, тесты, линт и типы
+ * при этом останутся зелёными, а `getComputedStyle` молча покажет
+ * `padding: 0px`. Поэтому весь сброс и материал мира ниже обёрнуты в
+ * `@layer base`. Доказано `src/styles/tokens.test.tsx`: тест собирает
+ * настоящий CSS через `tailwindcss.compile()` (тот же компилятор, что
+ * `@tailwindcss/vite`) и проверяет байты вывода — что `*, *::before,
+ * *::after {…}` лежит именно внутри `@layer base`, а не снаружи. `@layer
+ * theme, base, components, utilities;` объявляется Tailwind первой строкой и
+ * фиксирует порядок слоёв независимо от места объявления — слой `base`
+ * гарантированно проигрывает `utilities`, только пока правило внутри него
+ * ЗАСЛОЕНО.
  */
 @layer base {
   *,
   *::before,
   *::after {
     box-sizing: border-box;
-    border-color: var(--color-moss-veil);
+    border-color: var(--color-line);
   }
 
   html {
     color-scheme: dark;
-    background: var(--color-garden-ground);
+    background: var(--color-scene);
     /* Вертикальный экран Telegram Mini App — десктоп вторичен (PRODUCT.md). */
     height: 100%;
     /* Тач-устройство: без резинового оттягивания страницы и без жёлтой вспышки тапа. */
@@ -40,8 +44,8 @@
     margin: 0;
     min-height: 100dvh;
     height: 100%;
-    background: var(--color-garden-ground);
-    color: var(--color-orbit);
+    background: var(--color-scene);
+    color: var(--color-ink);
     font-family: var(--font-body);
     font-size: var(--text-base);
     line-height: var(--text-base--line-height);
@@ -89,83 +93,228 @@
   }
 
   ::selection {
-    background: var(--color-updraft);
-    color: var(--color-garden-deep);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
   }
 
-  /*
-   * Глубина земли (docs/SPEC.md §1 «Земля»): мягкий подсвет сверху, уход в
-   * `--garden-deep` к низу каждого экранного цикла, очень слабое зерно —
-   * земля перестаёт быть ровной заливкой, оставаясь той же плоской краской
-   * `--color-garden-ground` (`bg-garden-ground` в App.tsx). Это НЕ обход
-   * ловушки каскадных слоёв выше: `.bg-garden-ground` из App.tsx задаёт
-   * только `background-color` (утилита Tailwind, слой `utilities`) — здесь
-   * мы добавляем `background-image`, СОВСЕМ ДРУГОЕ свойство, поэтому нет
-   * конкуренции специфичности слоёв вообще: цвет и картинка красятся вместе,
-   * а не спорят за одно и то же объявление. Правило всё равно живёт внутри
-   * `@layer base`, как и весь сброс выше, — по той же причине, по которой
-   * это обязательно для отступов: правило вне `@layer` стало бы
-   * незаслоённым и выиграло бы у утилит независимо от того, воюет оно с
-   * ними за свойство или нет.
+  /* ============================================================
+   * МАТЕРИАЛ МИРА (docs/SPEC.md §1: «Грязь обязательна» + «Свет — главный
+   * инструмент»). Три переиспользуемых слоя, которыми `ActStage.tsx`
+   * собирает сцену акта — только CSS/SVG, ни одного растрового файла, без
+   * `backdrop-filter` на весь экран, без анимированных `filter`.
    *
-   * Три СSS-слоя картинки (без растровых файлов):
-   *  1. SVG feTurbulence — тайловое зерно, инлайн data URI, альфа ~0.025.
-   *  2. Радиальный подсвет сверху — мховый оттенок, гаснет к середине.
-   *  3. Линейный уход в `--garden-deep` к низу каждого повтора 100vh —
-   *     буквальный «провал в глубину» тех же токенов (см. --color-garden-deep
-   *     в tokens.css), без единого нового цвета.
-   *
-   * Все три слоя статичны (не анимируются, никаких filter-переходов) и не
-   * используют `backdrop-filter` — стоимость кадра не растёт. Длинное чтение
-   * лежит на непрозрачной `--cloud-paper` карточке (`Surface kind="paper"`)
-   * поверх этого фона, поэтому контраст текста не задет.
+   * Все три класса читают ТЕКУЩИЙ акт через `--color-*`/`--grain-opacity`/
+   * `--vignette-strength`, объявленные заново на каждом `[data-act]` (без
+   * промежуточного уровня косвенности — см. комментарий в tokens.css), поэтому
+   * достаточно сменить `data-act` на обёртке `ActStage`, чтобы сразу
+   * поменялись цвет сцены (см. body/html выше), характер зерна, сила
+   * виньетки и форма источника света — один переключатель на весь набор.
+   * ============================================================ */
+
+  /**
+   * Зерно плёнки. Полупрозрачный белый шум (feTurbulence, alpha-only) поверх
+   * сцены с `mix-blend-mode: overlay` — цвет не зашит: overlay сам берёт
+   * характер от того, что под ним, поэтому один и тот же SVG выглядит
+   * по-разному на светлой сцене акта II и на чёрной сцене акта V. Плотность
+   * зерна — это `--grain-opacity` (0..1), собственный параметр каждого акта:
+   * гуще в пыли и в допросной, тоньше на стали и в финале.
    */
-  .bg-garden-ground {
-    background-image:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-      radial-gradient(
-        ellipse 130% 46% at 50% 0%,
-        color-mix(in oklab, var(--color-moss-veil) 16%, transparent) 0%,
-        transparent 68%
-      ),
-      linear-gradient(
-        to bottom,
-        transparent 0%,
-        transparent 52%,
-        color-mix(in oklab, var(--color-garden-deep) 80%, transparent) 100%
-      );
-    background-repeat: repeat, repeat-y, repeat-y;
-    background-size: 140px 140px, 100% 100vh, 100% 100vh;
-    background-position: top left, top center, top center;
+  .stage-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 140px 140px;
+    opacity: var(--grain-opacity);
+    mix-blend-mode: overlay;
   }
 
   /**
-   * Бумага облака — тоже материал, а не заливка.
-   *
-   * После того как земля получила зерно и глубину, единственной абсолютно
-   * плоской поверхностью осталась карточка длинного чтения, то есть главный
-   * объём контента: плоскость просто переехала с фона на передний план.
-   * Здесь тот же приём, что и у земли, но вдвое слабее — под чёрным текстом
-   * зерно обязано быть на грани заметности, иначе оно начнёт спорить с
-   * чтением. Контраст `--anchor` на `--cloud-paper` (15.9:1) не задет:
-   * правило трогает только `background-image`, цвет подложки остаётся за
-   * утилитой `bg-cloud-paper`, конкуренции слоёв нет.
+   * Виньетка: тёмный край кадра, дно — `--color-scene-deep`, тот же токен,
+   * которым акт красит собственную глубину, — не новый цвет, буквальный
+   * «провал в глубину» сцены. Сила — `--vignette-strength` (0..1): сильнее всего
+   * в акте V («всё остальное в темноте»), слабее всего в I и VI.
+   */
+  .stage-vignette {
+    background: radial-gradient(
+      ellipse 130% 85% at 50% 40%,
+      transparent 38%,
+      var(--color-scene-deep) 118%
+    );
+    opacity: var(--vignette-strength);
+  }
+
+  /**
+   * Источник света. Форма и положение — предметный признак акта, а не
+   * оттенок: панель офиса сверху, жёсткое солнце, узкий холодный луч,
+   * свечение изнутри, конус лампы допроса, ровный тёплый свет. Базовый
+   * класс задаёт только геометрию слоя; каждый `[data-act]` ниже red-ставит
+   * `background` и, где нужно, статичную по интенсивности, но живую по
+   * времени петлю (дрожь лампы, марево, дыхание свечения — docs/SPEC.md §1
+   * «Движение»: «одно оркестрованное событие на экран»).
+   */
+  .stage-light {
+    background: none;
+  }
+
+  [data-act='i'] .stage-light {
+    /* Люминесцентная панель во всю ширину сверху + едва заметные швы решётки
+       плафона. Ни одной мягкой тени — свет ровный, приборный. */
+    background:
+      repeating-linear-gradient(
+        90deg,
+        color-mix(in oklab, var(--color-glow) 10%, transparent) 0 2px,
+        transparent 2px 64px
+      ),
+      linear-gradient(180deg, color-mix(in oklab, var(--color-glow) 60%, transparent) 0%, transparent 32%);
+    animation: stage-flicker-i var(--duration-ambient) var(--ease-ambient) infinite;
+  }
+
+  [data-act='ii'] .stage-light {
+    /* Жёсткое солнце строго сверху — резкий хотспот, не мягкое пятно — плюс
+       полоса марева, где горизонт «плывёт». */
+    background:
+      radial-gradient(
+        circle at 50% -8%,
+        color-mix(in oklab, var(--color-glow) 85%, transparent) 0%,
+        transparent 42%
+      ),
+      linear-gradient(
+        180deg,
+        transparent 52%,
+        color-mix(in oklab, var(--color-glow) 22%, transparent) 66%,
+        transparent 80%
+      );
+    animation: stage-haze-ii var(--duration-ambient) var(--ease-ambient) infinite alternate;
+  }
+
+  [data-act='iii'] .stage-light {
+    /* Узкий холодный луч по диагонали + частые тонкие полосы — отражения на
+       металле. Статично: «точный свет», без дрожи и без дыхания. */
+    background:
+      linear-gradient(
+        112deg,
+        color-mix(in oklab, var(--color-glow) 42%, transparent) 0%,
+        transparent 22%
+      ),
+      repeating-linear-gradient(
+        112deg,
+        color-mix(in oklab, var(--color-glow) 7%, transparent) 0 2px,
+        transparent 2px 22px
+      );
+  }
+
+  [data-act='iv'] .stage-light {
+    /* Свечение снизу-изнутри, не сверху — источник света в самом веществе,
+       не над сценой. Медленное дыхание. */
+    background: radial-gradient(
+      ellipse 92% 62% at 50% 74%,
+      color-mix(in oklab, var(--color-glow) 55%, transparent) 0%,
+      transparent 58%
+    );
+    animation: stage-breathe-iv var(--duration-ambient) var(--ease-ambient) infinite alternate;
+  }
+
+  [data-act='v'] .stage-light {
+    /* Узкий конус лампы допроса строго по центру сверху — всё остальное
+       съедает `.stage-vignette`. Лампа держится, но моргает на грани отказа. */
+    background: radial-gradient(
+      ellipse 42% 34% at 50% 0%,
+      color-mix(in oklab, var(--color-glow) 92%, transparent) 0%,
+      transparent 60%
+    );
+    animation: stage-flicker-v calc(var(--duration-ambient) * 1.5) var(--ease-ambient) infinite;
+  }
+
+  [data-act='vi'] .stage-light {
+    /* Ровный тёплый свет — ничего резкого, ничего направленного. Спокойная
+       сила: единственный акт вообще без петли движения в источнике света. */
+    background:
+      linear-gradient(180deg, color-mix(in oklab, var(--color-glow) 30%, transparent) 0%, transparent 46%),
+      radial-gradient(
+        ellipse 130% 70% at 50% 100%,
+        color-mix(in oklab, var(--color-glow) 18%, transparent) 0%,
+        transparent 62%
+      );
+  }
+
+  @keyframes stage-flicker-i {
+    0%,
+    91%,
+    100% {
+      opacity: 1;
+    }
+    92% {
+      opacity: 0.82;
+    }
+    93% {
+      opacity: 1;
+    }
+    95% {
+      opacity: 0.88;
+    }
+    96% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes stage-haze-ii {
+    from {
+      opacity: 0.82;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes stage-breathe-iv {
+    from {
+      opacity: 0.72;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes stage-flicker-v {
+    0%,
+    85%,
+    100% {
+      opacity: 1;
+    }
+    86% {
+      opacity: 0.68;
+    }
+    88% {
+      opacity: 1;
+    }
+    90% {
+      opacity: 0.74;
+    }
+    92% {
+      opacity: 1;
+    }
+  }
+
+  /**
+   * Бумага акта — тоже материал, не стерильная заливка (правило 3, §1).
+   * Слабое зерно (та же текстура, вдвое приглушённей — под текстом оно
+   * обязано быть на грани заметности) плюс мягкий подсвет сверху. Красит
+   * только `background-image`, поэтому с утилитой `bg-paper` (свойство
+   * `background-color`) конкуренции нет — оба слоя красятся вместе.
    */
   .surface-paper-grain {
     background-image:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.025 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E"),
-      radial-gradient(
-        ellipse 120% 60% at 50% 0%,
-        rgb(255 255 255 / 0.55) 0%,
-        transparent 60%
-      );
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.03 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E"),
+      radial-gradient(ellipse 120% 55% at 50% 0%, rgb(255 255 255 / 0.35) 0%, transparent 62%);
     background-repeat: repeat, no-repeat;
     background-size: 120px 120px, 100% 100%;
   }
 
   /* Воронка держится на движении (SPEC.md §1), но обязана оставаться
      проходимой при отключённой анимации — глобальный барьер поверх
-     точечных проверок prefers-reduced-motion в механике движения. */
+     точечных проверок prefers-reduced-motion в механике движения. Ловит и
+     дрожь лампы/марево/дыхание выше, и переход между актами в ActStage: обе
+     петли и оба transition читают --duration-* и обычные CSS-transition, а не
+     собственный таймер, поэтому один барьер держит их все. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

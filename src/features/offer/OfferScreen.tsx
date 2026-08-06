@@ -1,17 +1,23 @@
+import { useState } from 'react';
+import type { Block } from '@/content/types';
 import { checkout, finalThought, offer, support } from '@/content/offer';
+import { cn } from '@/lib/cn';
+import { Blocks } from '@/ui/Blocks';
 import { Button } from '@/ui/Button';
-import { CurvedHeading } from '@/ui/CurvedHeading';
 import { ExternalButton } from '@/ui/ExternalButton';
 import { Surface } from '@/ui/Surface';
 import { useFunnel } from '@/store/funnel';
-import { useState } from 'react';
 
 /**
- * Шаг 14. Оффер и финальная мысль.
+ * Шаг 14. Оффер и финальная мысль. Акт VI — глубокая сталь и янтарь: ровный
+ * тёплый свет, спокойная сила. Герой уже ведёт, а не оправдывается.
  *
- * Единственный коммерческий экран воронки и единственная цифра — 3 990 ₽.
- * Пока ссылки оплаты нет, кнопка честно неактивна и подписана: она не ведёт
- * в никуда и не притворяется рабочей (docs/SPEC.md §3.6).
+ * Единственный коммерческий экран воронки и единственная подтверждённая
+ * цифра — 3 990 ₽ (docs/SPEC.md §4.4). Цена вынесена из бумаги акта в
+ * собственную рамку со свечением акцента — она обязана читаться как событие
+ * экрана, не как строка в карточке. Пока ссылки оплаты нет, кнопка честно
+ * неактивна и подписана: она не ведёт в никуда и не притворяется рабочей
+ * (docs/SPEC.md §3.6).
  *
  * Финальная мысль вынесена на отдельный шаг чтения, а не свалена под ценой:
  * она закрывает круг с первым экраном, и продавать в этот момент уже поздно.
@@ -21,47 +27,30 @@ export function OfferScreen() {
   const reset = useFunnel((s) => s.reset);
 
   if (showFinal) {
+    const finalBlocks: Block[] = [
+      ...finalThought.blocks.map((text) => ({ kind: 'p' as const, text })),
+      { kind: 'list' as const, items: [...finalThought.questions] },
+      ...finalThought.after.map((text) => ({ kind: 'p' as const, text })),
+      { kind: 'lead' as const, text: finalThought.closing },
+    ];
+
     return (
       <div className="flex flex-col gap-6 px-4 pb-12 pt-2">
-        <CurvedHeading text={finalThought.title} law="updraft" size="md" level={1} />
+        <h1 className="font-display text-display-md uppercase leading-tight text-ink">
+          {finalThought.title}
+        </h1>
 
         <Surface kind="paper" as="article" className="mx-auto w-full">
-          {finalThought.blocks.map((line) => (
-            <p key={line} className="mt-3 first:mt-0">
-              {line}
-            </p>
-          ))}
-
-          <ul className="mt-4 flex flex-col gap-2">
-            {finalThought.questions.map((q) => (
-              <li key={q} className="flex gap-3">
-                <span
-                  aria-hidden
-                  className="mt-[0.55em] h-[6px] w-[6px] shrink-0 rounded-full bg-updraft"
-                />
-                <span>{q}</span>
-              </li>
-            ))}
-          </ul>
-
-          {finalThought.after.map((line) => (
-            <p key={line} className="mt-3">
-              {line}
-            </p>
-          ))}
-
-          <p className="mt-6 font-display text-display-sm leading-tight text-anchor">
-            {finalThought.closing}
-          </p>
+          <Blocks blocks={finalBlocks} />
         </Surface>
 
         <div className="mx-auto flex w-full max-w-prose flex-col gap-3">
-          <ExternalButton action={checkout} law="updraft" />
-          <ExternalButton action={support} law="orbit" />
+          <ExternalButton action={checkout} />
+          <ExternalButton action={support} />
           <button
             type="button"
             onClick={reset}
-            className="self-start font-legend text-legend uppercase tracking-[0.08em] text-moss-veil/70 underline underline-offset-4"
+            className="self-start font-legend text-legend uppercase tracking-[0.08em] text-ink-dim underline underline-offset-4"
           >
             Пройти заново
           </button>
@@ -70,33 +59,40 @@ export function OfferScreen() {
     );
   }
 
+  const offerBlocks: Block[] = [
+    { kind: 'p', text: offer.standfirst },
+    ...offer.not.map((text) => ({ kind: 'p' as const, text })),
+    { kind: 'p', text: offer.but },
+  ];
+
   return (
     <div className="flex flex-col gap-6 px-4 pb-12 pt-2">
-      <CurvedHeading text={offer.title} law="anchor" size="lg" level={1} />
+      <h1 className="font-display text-display-lg uppercase leading-none text-ink">
+        {offer.title}
+      </h1>
 
       <Surface kind="paper" as="article" className="mx-auto w-full">
-        {/* Подзаголовок — это предложение на две строки, а не заголовок.
-            Дисплейным кеглем он занимал весь первый экран и отбирал внимание
-            у единственного события этой страницы — цены. */}
-        <p className="text-lg leading-snug text-anchor">{offer.standfirst}</p>
-
-        {offer.not.map((line) => (
-          <p key={line} className="mt-3 text-anchor/70">
-            {line}
-          </p>
-        ))}
-
-        <p className="mt-4">{offer.but}</p>
-
-        {/* Цена — единственная подтверждённая коммерческая цифра воронки. */}
-        <p className="mt-8 font-display text-display-lg leading-none text-anchor">
-          {offer.price}
-        </p>
+        <Blocks blocks={offerBlocks} />
       </Surface>
 
+      {/* Единственная коммерческая цифра всей воронки — собственная рамка,
+          не строка внутри бумаги: цена обязана читаться как событие экрана. */}
+      <div
+        className={cn(
+          'mx-auto flex w-full max-w-prose flex-col items-center gap-2',
+          'rounded-sm border-2 border-accent bg-scene-deep/60 px-6 py-8 text-center',
+          'shadow-glow-accent',
+        )}
+      >
+        {/* Ревью прочитало висевший здесь оранжевый квадрат как случайный
+            глиф: он ни к чему не относился и читался как мусор над цифрой.
+            Цене не нужна подпорка — она и есть событие экрана. */}
+        <p className="font-display text-display-xl leading-none text-accent">{offer.price}</p>
+      </div>
+
       <div className="mx-auto flex w-full max-w-prose flex-col gap-4">
-        <ExternalButton action={checkout} law="updraft" />
-        <Button tone="quiet" law="orbit" full onClick={() => setShowFinal(true)}>
+        <ExternalButton action={checkout} />
+        <Button tone="quiet" full onClick={() => setShowFinal(true)}>
           Что изменилось за эту воронку
         </Button>
       </div>

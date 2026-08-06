@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 import type { Block } from '@/content/types';
 import { LIVES, quizFailed, quizIntro, quizPassed, quizQuestions } from '@/content/quiz';
 import { useFunnel } from '@/store/funnel';
@@ -6,10 +7,10 @@ import { useStepNav } from '@/router/useStepNav';
 import { haptics } from '@/lib/telegram';
 import { Blocks } from '@/ui/Blocks';
 import { Button } from '@/ui/Button';
-import { CurvedHeading } from '@/ui/CurvedHeading';
 import { Surface } from '@/ui/Surface';
 import { AnswerOption, type AnswerState } from './AnswerOption';
-import { OrbitLives } from './OrbitLives';
+import { Lives } from './Lives';
+import { useReducedMotionLive } from './useReducedMotionLive';
 
 const INTRO_FACTS_BLOCKS: Block[] = [{ kind: 'list', items: [...quizIntro.facts] }];
 
@@ -22,13 +23,15 @@ const INTRO_FACTS_BLOCKS: Block[] = [{ kind: 'list', items: [...quizIntro.facts]
 function QuizIntro({ onStart }: { onStart: () => void }) {
   return (
     <div className="flex flex-col items-center gap-6 px-4 pb-10 pt-6 text-center">
-      <OrbitLives lives={LIVES} size={128} />
-      <CurvedHeading text={quizIntro.title} law="orbit" size="md" level={1} />
-      <p className="text-orbit/80">{quizIntro.standfirst}</p>
+      <Lives lives={LIVES} size="lg" />
+      <h1 className="font-display text-display-md uppercase leading-tight text-ink">
+        {quizIntro.title}
+      </h1>
+      <p className="text-ink-dim">{quizIntro.standfirst}</p>
       <Surface kind="paper" className="w-full text-left">
         <Blocks blocks={INTRO_FACTS_BLOCKS} />
       </Surface>
-      <Button law="orbit" full onClick={onStart}>
+      <Button full onClick={onStart}>
         {quizIntro.cta}
       </Button>
     </div>
@@ -38,13 +41,17 @@ function QuizIntro({ onStart }: { onStart: () => void }) {
 /**
  * Шаг 10. Допуск: 12 ситуаций, 5 жизней.
  *
- * Жизни — орбита прозрачных капель вокруг чёрного цветка (`OrbitLives`), а не
- * строчка «осталось 3»: это главный визуальный носитель состояния экрана
- * (docs/SPEC.md §1, §3.4). При ошибке капля срывается и падает вниз красным.
+ * Грейд акта V — тревожный красный на чёрном, лампа сверху, всё остальное в
+ * темноте (docs/SPEC.md §1, §3.4). Жизни — ряд предметных жетонов (`Lives`),
+ * а не строчка «осталось 3». Потеря жизни — событие: экран гасит короткой
+ * красной вспышкой, свет садится ещё на шаг (пропускается при
+ * `prefers-reduced-motion`, но сам жетон всё равно гаснет формой — воронка
+ * остаётся осмысленной и без движения).
  *
  * Разбор (`explanation`) показывается после ЛЮБОГО ответа, включая верный —
  * без него тест превращается в угадайку. При ошибке видно, какой вариант был
- * правильным: у него собственный знак и подпись, не только цвет заливки.
+ * правильным: у него собственный знак и подпись, не только цвет заливки —
+ * в этом акте оба смысловых цвета (`accent`/`danger`) сами по себе красные.
  */
 export function QuizScreen() {
   const { go } = useStepNav();
@@ -54,6 +61,8 @@ export function QuizScreen() {
   const startQuiz = useFunnel((s) => s.startQuiz);
   const answer = useFunnel((s) => s.answer);
   const [picked, setPicked] = useState<string | null>(null);
+  const [flashKey, setFlashKey] = useState(0);
+  const reduced = useReducedMotionLive();
 
   const started = order.length === quizQuestions.length;
   const finished = started && (lives <= 0 || cursor >= order.length);
@@ -88,21 +97,38 @@ export function QuizScreen() {
   }
 
   function handleNext() {
+    const wasWrong = !isCorrect;
     answer(isCorrect, question.topic);
     setPicked(null);
+    if (wasWrong) setFlashKey((k) => k + 1);
   }
 
   return (
-    <div className="flex flex-col gap-5 px-4 pb-10 pt-2">
+    <div className="relative flex flex-col gap-5 px-4 pb-10 pt-2">
+      {!reduced && flashKey > 0 && (
+        // Потеря жизни — событие сцены, не только жетона: короткая красная
+        // вспышка на весь кадр, свет допросной садится ещё на шаг.
+        <motion.div
+          key={flashKey}
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-[var(--z-overlay)] bg-danger"
+          initial={{ opacity: 0.5 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: 0.55, ease: [0.65, 0, 0.35, 1] }}
+        />
+      )}
+
       <div className="flex items-center justify-between gap-4">
-        <span className="font-legend text-legend uppercase tracking-[0.08em] text-moss-veil">
+        <span className="font-legend text-legend uppercase tracking-[0.08em] text-ink-dim">
           {cursor + 1} / {order.length}
         </span>
-        <OrbitLives lives={lives} size={72} />
+        <Lives lives={lives} />
       </div>
 
-      <p className="text-orbit/80">{question.situation}</p>
-      <CurvedHeading text={question.question} law="orbit" size="sm" level={2} />
+      <p className="text-ink-dim">{question.situation}</p>
+      <h2 className="font-display text-display-sm uppercase leading-tight text-ink">
+        {question.question}
+      </h2>
 
       <ul className="flex flex-col gap-2.5">
         {question.options.map((option) => {
@@ -131,7 +157,7 @@ export function QuizScreen() {
           <Surface kind="paper" className="mx-auto w-full">
             <p>{question.explanation}</p>
           </Surface>
-          <Button law={isCorrect ? 'updraft' : 'deflect'} full onClick={handleNext}>
+          <Button full onClick={handleNext}>
             Дальше
           </Button>
         </>
@@ -150,60 +176,49 @@ export function VerdictScreen() {
   const passed = lives > 0;
 
   if (passed) {
+    const blocks: Block[] = [
+      ...quizPassed.blocks.map((text) => ({ kind: 'p' as const, text })),
+      { kind: 'list' as const, items: [...quizPassed.list] },
+      { kind: 'p' as const, text: quizPassed.closing },
+      { kind: 'lead' as const, text: quizPassed.question },
+    ];
     return (
       <div className="flex flex-col items-center gap-6 px-4 pb-10 pt-2 text-center">
-        {/* Момент награды всей воронки: орбита замыкается, цветок раскрывается. */}
-        <OrbitLives lives={lives} celebrate size={168} />
-        <CurvedHeading text={quizPassed.title} law="updraft" size="lg" level={1} />
+        {/* Момент награды всей воронки: жетоны держатся полным рядом и светятся. */}
+        <Lives lives={lives} celebrate size="lg" />
+        <h1 className="font-display text-display-lg uppercase leading-none text-ink">
+          {quizPassed.title}
+        </h1>
         <Surface kind="paper" className="mx-auto w-full text-left">
-          {quizPassed.blocks.map((line) => (
-            <p key={line} className="mt-3 first:mt-0">
-              {line}
-            </p>
-          ))}
-          <ul className="mt-4 flex flex-col gap-2">
-            {quizPassed.list.map((item) => (
-              <li key={item} className="flex gap-3">
-                <span
-                  aria-hidden
-                  className="mt-[0.55em] h-[6px] w-[6px] shrink-0 rounded-full bg-updraft"
-                />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4">{quizPassed.closing}</p>
-          <p className="mt-2 font-display text-display-sm leading-tight text-anchor">
-            {quizPassed.question}
-          </p>
+          <Blocks blocks={blocks} />
         </Surface>
-        <Button law="updraft" full onClick={() => go('video3')}>
+        <Button full onClick={() => go('video3')}>
           {quizPassed.cta}
         </Button>
       </div>
     );
   }
 
+  const failedBlocks: Block[] = [
+    ...quizFailed.blocks.map((text) => ({ kind: 'p' as const, text })),
+    { kind: 'lead' as const, text: quizFailed.diagnosis[weakest] },
+  ];
+
   return (
     <div className="flex flex-col items-center gap-6 px-4 pb-10 pt-2 text-center">
-      {/* Орбита пуста: все пять капель уже сорвались — это финальная точка, не тихая цифра. */}
-      <OrbitLives lives={0} size={128} />
-      <CurvedHeading text={quizFailed.title} law="deflect" size="md" level={1} />
+      {/* Ряд пуст: все пять жетонов уже погасли — это финальная точка, не тихая цифра. */}
+      <Lives lives={0} size="lg" />
+      <h1 className="font-display text-display-md uppercase leading-tight text-ink">
+        {quizFailed.title}
+      </h1>
       <Surface kind="paper" className="mx-auto w-full text-left">
-        {quizFailed.blocks.map((line) => (
-          <p key={line} className="mt-3 first:mt-0">
-            {line}
-          </p>
-        ))}
-        <p className="mt-5 font-display text-lg leading-snug text-anchor">
-          {quizFailed.diagnosis[weakest]}
-        </p>
+        <Blocks blocks={failedBlocks} />
       </Surface>
       <div className="flex w-full flex-col gap-3">
-        <Button law="deflect" full onClick={() => reviewFragment(weakest)}>
+        <Button full onClick={() => reviewFragment(weakest)}>
           {quizFailed.actions[weakest]}
         </Button>
-        <Button tone="quiet" law="orbit" full onClick={() => restartQuiz(quizQuestions.length)}>
+        <Button tone="quiet" full onClick={() => restartQuiz(quizQuestions.length)}>
           {quizFailed.retry}
         </Button>
       </div>

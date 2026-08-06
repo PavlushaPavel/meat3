@@ -1,41 +1,53 @@
-import { useEffect } from 'react';
-import { GravityField } from '@/mechanics/GravityField';
-import { STEP_LAW } from '@/router/flow';
+import { useEffect, useRef, useState } from 'react';
+import { actOfStep, isFirstStepOfAct, type ActId } from '@/acts';
 import { SCREENS } from '@/router/registry';
 import { useFunnel } from '@/store/funnel';
 import { initTelegram } from '@/lib/telegram';
-import { LeverBar } from '@/ui/LeverBar';
+import { ActStage } from '@/ui/ActStage';
+import { ActTitleCard } from '@/ui/ActTitleCard';
+import { Badge } from '@/ui/Badge';
 
 /**
  * Оболочка воронки.
  *
- * Поле гравитации лежит фоном на всех экранах и меняет закон вместе с шагом —
- * переход между экранами читается как смена состояния мира, а не как смена
- * страницы (docs/SPEC.md §1 «Движение»).
+ * Мир меняется вместе с актом: сцена красит фон, свет, зерно и виньетку по
+ * `data-act`, а вход в новый акт объявляется титульной карточкой — переход
+ * этапа обязан читаться как событие, а не как смена фона (docs/SPEC.md §1, §3.8).
  */
 export default function App() {
   const step = useFunnel((s) => s.step);
-  const law = STEP_LAW[step];
+  const act = actOfStep(step);
   const Screen = SCREENS[step];
+
+  // Какой акт уже объявлен карточкой. Первый акт объявляется тоже: воронка
+  // начинается с титра, как серия.
+  const announced = useRef<ActId | null>(null);
+  const [titleAct, setTitleAct] = useState<ActId | null>(null);
 
   useEffect(() => {
     initTelegram();
   }, []);
 
-  return (
-    <div className="relative min-h-[100dvh] overflow-x-hidden bg-garden-ground">
-      {/* Декоративный слой: сад. Нажатия не перехватывает. */}
-      <GravityField law={law} className="fixed inset-0 z-0" />
+  useEffect(() => {
+    // Карточка показывается только на ПЕРВОМ шаге акта: внутри акта переходы
+    // между экранами титром не разрываются.
+    if (announced.current !== act && isFirstStepOfAct(step)) {
+      announced.current = act;
+      setTitleAct(act);
+    }
+  }, [act, step]);
 
-      {/* Та же мера, что у контента: иначе на десктопе рычаги разъезжаются
-          по краям экрана и перестают читаться как одна полоса прогресса. */}
+  return (
+    <ActStage act={act}>
       <header className="relative z-10 mx-auto w-full max-w-screen-sm px-4 pt-3">
-        <LeverBar />
+        <Badge act={act} />
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-screen-sm">
         <Screen />
       </main>
-    </div>
+
+      {titleAct && <ActTitleCard act={titleAct} onDone={() => setTitleAct(null)} />}
+    </ActStage>
   );
 }

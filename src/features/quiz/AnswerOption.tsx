@@ -10,15 +10,16 @@ export interface AnswerOptionProps {
 }
 
 /**
- * Один вариант ответа теста.
+ * Один вариант ответа допуска. Грейд акта V: тревожный красный на чёрном —
+ * `--color-accent` и `--color-danger` здесь оба красные, поэтому состояние
+ * НИКОГДА не передаётся только цветом (docs/SPEC.md, требование
+ * доступности): у верного варианта и у выбранного неверного есть собственный
+ * знак (галка / крест) и собственная текстовая подпись — дальтоник обязан
+ * понять, где правильный ответ, не различая оттенки одного и того же
+ * тревожного красного.
  *
- * Состояние никогда не передаётся только цветом: у верного варианта и у
- * выбранного неверного есть собственный знак (галка / крест) и собственная
- * подпись — дальтоник обязан понять, где правильный ответ, не различая
- * красный и синий (docs/SPEC.md, требование доступности допуска).
- *
- * Цель под палец — минимум 44px по высоте (`min-h-[44px]`), тест сдают с
- * телефона.
+ * Цель под палец — минимум 44px по высоте (`min-h-[44px]`), допуск сдают
+ * с телефона.
  */
 export function AnswerOption({ text, state, disabled, onSelect }: AnswerOptionProps) {
   return (
@@ -28,13 +29,13 @@ export function AnswerOption({ text, state, disabled, onSelect }: AnswerOptionPr
       onClick={onSelect}
       className={cn(
         'flex min-h-[44px] w-full items-center justify-between gap-3',
-        'rounded-leaf border px-4 py-3.5 text-left',
-        'transition-colors duration-200 ease-drift',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-updraft',
-        state === 'idle' && 'border-moss-veil/25 bg-garden-deep/40 text-orbit',
-        state === 'right' && 'border-updraft/70 bg-updraft/15 text-orbit',
-        state === 'wrong' && 'border-deflect/70 bg-deflect/15 text-orbit',
-        state === 'muted' && 'border-moss-veil/15 text-orbit/45',
+        'rounded-sm border px-4 py-3.5 text-left',
+        'transition-colors duration-150 ease-snap',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+        state === 'idle' && 'border-line bg-scene-deep/50 text-ink',
+        state === 'right' && 'border-accent bg-accent/15 text-ink',
+        state === 'wrong' && 'border-danger bg-danger/15 text-ink',
+        state === 'muted' && 'border-line/40 text-ink-dim',
       )}
     >
       <span className="min-w-0">{text}</span>
@@ -49,9 +50,9 @@ function StatusMark({ kind }: { kind: 'right' | 'wrong' }) {
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1',
+        'inline-flex shrink-0 items-center gap-1 rounded-xs px-2 py-1',
         'font-legend text-[10px] uppercase tracking-[0.06em]',
-        kind === 'right' ? 'bg-updraft/15 text-updraft' : 'bg-deflect/15 text-deflect',
+        kind === 'right' ? 'bg-accent/20 text-accent' : 'bg-danger/20 text-danger',
       )}
     >
       <svg aria-hidden="true" viewBox="0 0 12 12" className="h-3 w-3">

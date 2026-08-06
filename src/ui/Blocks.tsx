@@ -2,7 +2,9 @@ import { cn } from '@/lib/cn';
 import type { Block } from '@/content/types';
 
 /**
- * Отрисовка длинного чтения.
+ * Отрисовка длинного чтения — живёт на бумаге акта (`Surface kind="paper"`),
+ * поэтому все цвета здесь на стороне `paper-*` (docs/SPEC.md §1.5: подложка
+ * чтения держит честный контраст внутри грейда акта, посчитан в tokens.css).
  *
  * Ритм авторского текста — короткие абзацы, часто в одно предложение
  * (docs/SPEC.md §4.3). Поэтому расстояние между абзацами здесь маленькое:
@@ -32,15 +34,15 @@ export function Blocks({ blocks, className }: BlocksProps) {
             );
 
           case 'quote':
-            // Чужой или внутренний голос: то, что человек слышит от клиента,
-            // от менеджера или от самого себя.
+            // Чужой или внутренний голос — набран как вклеенная в дело
+            // заметка: легенда мира (моноширинный), не курсив тела текста.
             return (
               <p
                 key={key}
                 className={cn(
                   'mt-4 first:mt-0',
-                  'border-l-2 border-deflect/50 pl-4',
-                  'font-body italic text-anchor/75',
+                  'border-l-2 border-line pl-4',
+                  'font-legend text-sm leading-relaxed text-paper-ink-dim',
                 )}
               >
                 {block.text}
@@ -54,7 +56,7 @@ export function Blocks({ blocks, className }: BlocksProps) {
                 key={key}
                 className={cn(
                   'mt-6 first:mt-0',
-                  'font-display text-display-sm leading-tight text-anchor',
+                  'font-display text-display-sm leading-tight text-paper-ink',
                 )}
               >
                 {block.text}
@@ -67,7 +69,8 @@ export function Blocks({ blocks, className }: BlocksProps) {
                 key={key}
                 className={cn(
                   'mt-8 first:mt-0',
-                  'font-display text-lg leading-snug text-anchor',
+                  'border-b border-line pb-1.5',
+                  'font-display text-lg uppercase tracking-[0.02em] leading-snug text-paper-ink',
                 )}
               >
                 {block.text}
@@ -79,11 +82,8 @@ export function Blocks({ blocks, className }: BlocksProps) {
               <ul key={key} className="mt-4 flex flex-col gap-2 first:mt-0">
                 {block.items.map((item) => (
                   <li key={item} className="flex gap-3">
-                    {/* Капля вместо маркера: перечисление тоже принадлежит миру. */}
-                    <span
-                      aria-hidden
-                      className="mt-[0.55em] h-[6px] w-[6px] shrink-0 rounded-full bg-updraft"
-                    />
+                    {/* Жёсткая метка вместо капли — квадрат, не кружок. */}
+                    <span aria-hidden className="mt-[0.5em] h-[7px] w-[7px] shrink-0 bg-accent" />
                     <span>{item}</span>
                   </li>
                 ))}

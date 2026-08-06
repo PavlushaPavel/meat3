@@ -4,19 +4,20 @@ import { chatMessages, chatOutro } from '@/content/chat';
 import { haptics } from '@/lib/telegram';
 import { useStepNav } from '@/router/useStepNav';
 import { Button } from '@/ui/Button';
-import { CurvedHeading } from '@/ui/CurvedHeading';
-import { RainMessage } from '@/mechanics/RainMessage';
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 /** Индекс последнего сообщения — единственного с `lifetimeMs: null` (docs/SPEC.md §3.1). */
 const LAST_INDEX = chatMessages.length - 1;
 
+/** Сколько мс идёт стирание строки: текст гаснет, след угасает следом. */
+const ERASE_MS = 480;
+
 /**
  * Живой (реагирующий на смену системной настройки без перезагрузки) признак
- * prefers-reduced-motion. Тот же паттерн, что в `RainMessage.tsx` — тот хук
- * приватный для мехники и не экспортируется, а правило мира требует именно
- * реактивной, а не разовой проверки (docs/SPEC.md §1 «Движение»).
+ * prefers-reduced-motion. Свой маленький слушатель, не библиотечный хук —
+ * канон (docs/SPEC.md §1 «Движение») требует именно реактивной проверки, а
+ * `useReducedMotion` из `motion/react` фиксирует значение один раз.
  */
 function useReducedMotionLive(): boolean {
   const [reduced, setReduced] = useState<boolean>(() =>
@@ -47,37 +48,111 @@ function computeAppearTimes(): number[] {
 }
 
 /**
- * Финальное обвинение: единственная капля с `lifetimeMs: null`, поэтому не
- * проходит через `RainMessage` (та умеет только временные капли — передать
- * ей "вечный" таймаут нельзя, `setTimeout` с огромной задержкой в Node
- * срабатывает почти сразу, а не через "бесконечность"). Крупная подача,
- * появляется один раз и остаётся — это удар, ради которого стоит вся сцена.
+ * Строка чужого экрана (docs/SPEC.md §3.1): появляется, держится `lifetimeMs`,
+ * затем гаснет — текст пропадает мгновенно (в тот же тик, что и `lifetimeMs`
+ * истёк — экран люминесцентного офиса, не капля с плавным падением), а на
+ * его месте угасает короткий след строки, пока сообщение не снимается со
+ * сцены целиком.
+ *
+ * Замена `RainMessage` (снесённый мир): та же грамматика — появление, срок
+ * жизни, стирание, `onExpired` — но в лексике акта I: приборный след, не
+ * падающая капля.
+ */
+function ScreenLine({
+  text,
+  lifetimeMs,
+  reduced,
+  onExpired,
+}: {
+  text: string;
+  lifetimeMs: number;
+  reduced: boolean;
+  onExpired: () => void;
+}) {
+  const [erasing, setErasing] = useState(false);
+
+  useEffect(() => {
+    setErasing(false);
+    const eraseTimer = setTimeout(() => setErasing(true), Math.max(0, lifetimeMs));
+    return () => clearTimeout(eraseTimer);
+  }, [lifetimeMs]);
+
+  useEffect(() => {
+    if (!erasing) return undefined;
+    const doneTimer = setTimeout(() => onExpired(), ERASE_MS);
+    return () => clearTimeout(doneTimer);
+    // onExpired нарочно не в зависимостях: не должен перезапускать таймер,
+    // если родитель передал новый инлайн-колбэк на том же сообщении.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [erasing]);
+
+  const enterTransition = reduced
+    ? { duration: 0.15, ease: 'linear' as const }
+    : { duration: 0.2, ease: [0.2, 0, 0, 1] as const };
+
+  return (
+    <motion.div
+      initial={reduced ? { opacity: 0 } : { opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={enterTransition}
+      className="flex items-baseline gap-2.5 border-b border-line/35 py-2"
+    >
+      <span aria-hidden className="font-legend text-legend text-ink-dim/70">
+        &gt;
+      </span>
+      {erasing ? (
+        <motion.span
+          aria-hidden
+          initial={{ scaleX: 1, opacity: 0.6 }}
+          animate={reduced ? { opacity: 0 } : { scaleX: 0, opacity: 0 }}
+          transition={
+            reduced
+              ? { duration: 0.15, ease: 'linear' as const }
+              : { duration: ERASE_MS / 1000, ease: [0.55, 0, 1, 0.45] as const }
+          }
+          style={{ transformOrigin: 'left' }}
+          className="h-px w-28 bg-ink-dim/60"
+        />
+      ) : (
+        <span className="font-legend text-sm leading-snug text-ink/90">{text}</span>
+      )}
+    </motion.div>
+  );
+}
+
+/**
+ * Финальное обвинение: единственная строка с `lifetimeMs: null`, поэтому не
+ * проходит через `ScreenLine` (та умеет только временные строки). Крупная
+ * подача, во весь кадр — удар, ради которого стоит вся сцена
+ * (docs/SPEC.md «Грейд акта: ... Финальное ... обязано быть ударом во весь
+ * кадр — это первый экран воронки и главный крючок»).
  */
 function FinalMessage({ text, reduced }: { text: string; reduced: boolean }) {
   return (
-    <motion.div
-      initial={reduced ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.95 }}
-      animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+    <motion.p
+      initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 1.04 }}
+      animate={{ opacity: 1, scale: 1 }}
       transition={
-        reduced ? { duration: 0.18, ease: 'linear' } : { type: 'spring', stiffness: 300, damping: 24 }
+        reduced
+          ? { duration: 0.18, ease: 'linear' as const }
+          : { duration: 0.45, ease: [0.2, 0, 0, 1] as const }
       }
-      className="mt-4 flex items-start gap-3"
+      className="font-display text-display-lg uppercase leading-[0.94] tracking-tight text-ink"
     >
-      <span aria-hidden="true" className="mt-3 h-3 w-3 shrink-0 rounded-full bg-deflect" />
-      <p className="font-display text-display-md leading-tight text-deflect">{text}</p>
-    </motion.div>
+      {text}
+    </motion.p>
   );
 }
 
 /**
  * Шаг 1. Входной экран: чат с клиентом (docs/SPEC.md §3.1).
  *
- * Клиент пишет сообщения по одному и тут же стирает их — каждая капля живёт
- * своей жизнью в `RainMessage`, здесь только расписание появления: момент
+ * Клиент пишет сообщения по одному и тут же стирает их — каждая строка живёт
+ * своей жизнью в `ScreenLine`, здесь только расписание появления: момент
  * появления i-го сообщения — сумма `delayMs` всех сообщений до него
  * включительно. Первые шесть с ощутимыми паузами, следующие — паузы короче
- * `lifetimeMs` предыдущих капель, поэтому они физически оказываются на
- * экране одновременно (внахлёст), без отдельной логики "перекрытия".
+ * `lifetimeMs` предыдущих строк, поэтому они физически оказываются на экране
+ * одновременно (внахлёст), без отдельной логики "перекрытия".
  *
  * Последнее сообщение (`lifetimeMs: null`, `big: true`) не стирается и
  * остаётся на экране — после него читается подпись и открывается кнопка
@@ -86,6 +161,10 @@ function FinalMessage({ text, reduced }: { text: string; reduced: boolean }) {
  * Тап по экрану, пока поток идёт, сразу доводит его до конца
  * (docs/SPEC.md §3.1 «Пропуск обязателен») — никого нельзя запирать в
  * анимации.
+ *
+ * Грейд акта I — люминесцентный офис — приходит целиком из `ActStage`
+ * (`data-act="i"` ставит App.tsx), здесь нет собственного фона и собственной
+ * тени: экран просто читает `bg-scene`/`text-ink` через классы мира.
  */
 export function ChatScreen() {
   const { next } = useStepNav();
@@ -94,7 +173,7 @@ export function ChatScreen() {
 
   // Сколько сообщений уже "пришло" (появилось на экране), включая финальное.
   const [revealedCount, setRevealedCount] = useState(0);
-  // Индексы капель, сейчас смонтированных через RainMessage: появились, ещё не стёрлись.
+  // Индексы строк, сейчас смонтированных через ScreenLine: появились, ещё не стёрлись.
   const [activeIndices, setActiveIndices] = useState<number[]>([]);
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -138,42 +217,55 @@ export function ChatScreen() {
   }, [done, clearScheduled]);
 
   const messageList = (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-0">
       {chatMessages.map((m, i) => {
         if (i === LAST_INDEX) {
           return done ? <FinalMessage key={i} text={m.text} reduced={reduced} /> : null;
         }
         if (!activeIndices.includes(i)) return null;
         return (
-          <RainMessage key={i} law="deflect" lifetimeMs={m.lifetimeMs ?? 0} onExpired={() => handleExpired(i)}>
-            <span className="text-orbit/85">{m.text}</span>
-          </RainMessage>
+          <ScreenLine
+            key={i}
+            text={m.text}
+            lifetimeMs={m.lifetimeMs ?? 0}
+            reduced={reduced}
+            onExpired={() => handleExpired(i)}
+          />
         );
       })}
     </div>
   );
 
   return (
-    <div className="flex min-h-[80dvh] flex-col justify-end gap-6 px-4 pb-10 pt-2">
+    <div className="flex min-h-[80dvh] flex-col justify-end gap-8 px-4 pb-10 pt-6">
       {done ? (
         messageList
       ) : (
-        <button type="button" onClick={skip} aria-label={chatOutro.skipHint} className="flex flex-col text-left">
+        <button
+          type="button"
+          onClick={skip}
+          aria-label={chatOutro.skipHint}
+          className="flex flex-col text-left"
+        >
           {messageList}
           <p
             aria-hidden="true"
-            className="mt-4 font-legend text-legend uppercase tracking-[0.08em] text-moss-veil"
+            className="mt-3 font-legend text-legend uppercase tracking-[0.1em] text-ink-dim"
           >
             {chatOutro.skipHint}
           </p>
         </button>
       )}
 
-      <CurvedHeading text={chatOutro.question} law="deflect" size="sm" level={1} />
+      <div className="flex flex-col gap-4">
+        <h1 className="font-display text-display-sm uppercase leading-[1.02] tracking-tight text-ink">
+          {chatOutro.question}
+        </h1>
 
-      <Button law="deflect" full disabled={!done} onClick={next}>
-        {chatOutro.cta}
-      </Button>
+        <Button full disabled={!done} onClick={next}>
+          {chatOutro.cta}
+        </Button>
+      </div>
     </div>
   );
 }

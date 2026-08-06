@@ -3,110 +3,93 @@ import { cn } from '@/lib/cn';
 import type { Law } from '@/content/types';
 
 /**
- * Таблетка мира: скруглённая кнопка с каплевым столбцом справа.
+ * Кнопка мира (docs/SPEC.md §1). Жёсткий прямоугольник — маленький радиус,
+ * офсетная тень без размытия, «впечатывается» в поверхность по тапу
+ * (тень уходит, содержимое сдвигается на её офсет). Никаких мягких
+ * скруглений, никаких капель — предмет, а не оформление.
  *
- * Каплевый столбец — не украшение: три капли показывают закон, под которым
- * живёт действие, и это единственная форма кнопки во всём приложении.
- * Стоковых кнопок в этом мире нет.
+ * Публичный API НЕ меняется относительно прежнего мира (эти пропы уже
+ * использует каждый экран, который параллельно переделывает другой агент):
+ * `law` остаётся в сигнатуре ради совместимости, но здесь игнорируется —
+ * внешний вид кнопки теперь берётся из текущего акта через `ActStage`
+ * (`--color-accent`/`--color-on-accent` и т.д. каскадом из `data-act`), а не
+ * из закона, под которым жил конкретный экран в снесённом мире.
  */
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   /** Основное действие экрана — одно на экран. */
   tone?: 'primary' | 'quiet';
-  /** Закон, под которым живёт действие. Красит заливку и капли. */
+  /** @deprecated Оставлен для совместимости со старым миром. Игнорируется:
+   * вид кнопки задаёт текущий акт (`ActStage`), а не закон экрана. */
   law?: Law;
   /** Растянуть на всю ширину — так живёт основное действие на телефоне. */
   full?: boolean;
 }
 
-const LAW_FILL: Record<Law, string> = {
-  updraft: 'bg-updraft text-garden-deep',
-  deflect: 'bg-deflect text-garden-deep',
-  orbit: 'bg-orbit text-anchor',
-  // Чёрная заливка на тёмной земле сама по себе почти не видна: основное
-  // действие экрана обязано читаться, поэтому у ANCHOR есть светлый кант.
-  anchor: 'bg-anchor text-orbit ring-1 ring-moss-veil/45',
-};
-
-const LAW_INK: Record<Law, string> = {
-  updraft: 'text-updraft',
-  deflect: 'text-deflect',
-  orbit: 'text-orbit',
-  anchor: 'text-orbit',
-};
-
-/**
- * Объём таблетки: тонкая светлая кромка сверху (роса на краю, изнутри —
- * `inset`) плюс мягкая тень снизу (переиспользует существующий токен
- * `--shadow-drop` из tokens.css, не заводит новый). Только активные
- * состояния — недоступная таблетка остаётся плоским контуром нарочно (её
- * задача не выглядеть как предмет, см. комментарий у `disabled` ниже).
- */
-const ACTIVE_MATERIAL_SHADOW =
-  // Кромка 0,28 и мягкая тень читались приборно, но не глазом: на снимке
-  // таблетка оставалась плоским прямоугольником с радиусом. Кромка усилена,
-  // тень опущена и растянута — предмет, а не заливка. Мир матовый, поэтому
-  // глянцевого блика здесь по-прежнему нет.
-  'shadow-[inset_0_1px_0_0_rgba(231,232,228,0.42),inset_0_-1px_0_0_rgba(14,15,16,0.18),0_4px_14px_-4px_rgba(14,15,16,0.55)]';
-
-/** Каплевый столбец: три капли, падающие по закону кнопки. */
-function DropColumn({ law }: { law: Law }) {
+/** Метка направления действия: жёсткая «галочка вперёд», не капля. */
+function AdvanceMark() {
   return (
-    <span aria-hidden className="flex flex-col items-center gap-[3px] opacity-70">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className={cn(
-            'block rounded-full bg-current',
-            // Капли сужаются по ходу падения — у updraft порядок обратный.
-            law === 'updraft'
-              ? ['h-[3px] w-[3px]', 'h-[4px] w-[4px]', 'h-[5px] w-[5px]'][i]
-              : ['h-[5px] w-[5px]', 'h-[4px] w-[4px]', 'h-[3px] w-[3px]'][i],
-          )}
-        />
-      ))}
-    </span>
+    <svg aria-hidden viewBox="0 0 10 16" className="h-4 w-2.5 shrink-0 opacity-80">
+      <path
+        d="M1.5 1L8.5 8L1.5 15"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+      />
+    </svg>
   );
 }
+
+const PRESSABLE_SHADOW =
+  // Офсетная тень без блюра — карточка приподнята над сценой. По тапу
+  // (см. `active:` ниже) содержимое сдвигается ровно на офсет тени, а сама
+  // тень гасится — кнопка визуально впечатывается в поверхность, не пружинит.
+  'shadow-[3px_3px_0_0_rgb(0_0_0_/_0.4)]';
 
 export function Button({
   children,
   tone = 'primary',
-  law = 'updraft',
+  law,
   full = false,
   className,
   disabled,
   ...rest
 }: ButtonProps) {
+  // Совместимость публичного API (см. комментарий у `ButtonProps.law` выше):
+  // проп принимается и осознанно не используется — вид кнопки берёт текущий
+  // акт, а не закон экрана.
+  void law;
+
   return (
     <button
       {...rest}
       disabled={disabled}
       className={cn(
-        'group inline-flex items-center justify-between gap-4',
-        'rounded-full px-6 py-4 text-left',
-        'font-body text-base font-medium',
-        'transition-[transform,opacity,background-color] duration-200 ease-drift',
-        'active:scale-[0.985]',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-updraft',
-        // Неактивная кнопка обязана быть различимой, но НЕ похожей на рабочую:
-        // залитая таблетка на 45% прозрачности читается как живая при беглом
-        // просмотре, и человек считает, что действие доступно. Поэтому
-        // недоступное состояние — всегда контурное, без заливки.
+        'group relative inline-flex items-center justify-between gap-4',
+        'rounded-sm px-5 py-3.5 text-left',
+        'font-display text-base uppercase tracking-[0.02em]',
+        'transition-[transform,opacity,background-color,box-shadow] duration-150 ease-snap',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
         disabled
-          ? cn('border border-dashed border-moss-veil/45 bg-transparent', LAW_INK[law])
+          ? // Недоступная кнопка — контурная и пунктирная, не просто тусклая
+            // заливка: форма меняется, не только цвет (требование доступности).
+            cn('border border-dashed border-line bg-transparent text-ink-dim')
           : tone === 'primary'
-            ? LAW_FILL[law]
-            : cn('border border-moss-veil/40 bg-transparent', LAW_INK[law]),
-        !disabled && ACTIVE_MATERIAL_SHADOW,
-        disabled && 'pointer-events-none opacity-80',
+            ? cn('border border-line bg-accent text-on-accent', PRESSABLE_SHADOW, 'active:translate-x-[3px] active:translate-y-[3px] active:shadow-none')
+            : cn(
+                'border-2 border-line bg-transparent text-ink',
+                'active:translate-x-[1px] active:translate-y-[1px]',
+              ),
+        disabled && 'pointer-events-none opacity-70',
         full && 'w-full',
         className,
       )}
     >
       <span className="min-w-0">{children}</span>
-      <DropColumn law={law} />
+      <AdvanceMark />
     </button>
   );
 }

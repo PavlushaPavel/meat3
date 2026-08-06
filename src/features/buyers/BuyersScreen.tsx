@@ -3,20 +3,19 @@ import { haptics } from '@/lib/telegram';
 import { useFunnel } from '@/store/funnel';
 import { useStepNav } from '@/router/useStepNav';
 import { Button } from '@/ui/Button';
-import { CurvedHeading } from '@/ui/CurvedHeading';
 import { Surface } from '@/ui/Surface';
-import { BuyerCloud, LAW_LEGEND } from './BuyerCloud';
+import { BuyerCard } from './BuyerCard';
 
 /**
- * Шаг 5. Пять покупателей ремонта — пять облаков с разной гравитацией
+ * Шаг 5. Пять покупателей ремонта — карточки дела в грейде акта III
  * (docs/SPEC.md §3.3).
  *
- * Один и тот же запрос летит по-разному под разными законами притяжения —
- * это весь смысл экрана, и он читается визуально в `BuyerCloud`, не только
- * текстом. Правильного ответа нет: после выбора экран показывает разбор
- * последствий (`verdict`), а не оценку. Федя — единственный без причины
- * действовать сейчас; это разбирается в его `verdict` и никак не помечается
- * как ошибка — ни здесь, ни в `content/buyers.ts`.
+ * Один и тот же запрос у пяти разных людей — весь смысл экрана читается
+ * текстом карточек (`situation`), не абстрактной формой. Правильного ответа
+ * нет: после выбора экран показывает разбор последствий (`verdict`), а не
+ * оценку. Федя — единственный без причины действовать сейчас; это
+ * разбирается в его `verdict` и никак не помечается как ошибка — ни здесь,
+ * ни в `content/buyers.ts`.
  */
 export function BuyersScreen() {
   const { next } = useStepNav();
@@ -26,14 +25,18 @@ export function BuyersScreen() {
 
   return (
     <div className="flex flex-col gap-5 px-4 pb-10 pt-2">
-      <CurvedHeading text={buyersPrompt.question} law="anchor" size="sm" level={1} />
-      <p className="text-orbit/75">{buyersPrompt.hint}</p>
+      <h1 className="font-display text-display-sm uppercase leading-tight text-ink">
+        {buyersPrompt.question}
+      </h1>
+      <p className="text-ink-dim">{buyersPrompt.hint}</p>
 
       <ul className="flex flex-col gap-2.5">
-        {buyers.map((buyer) => (
+        {buyers.map((buyer, i) => (
           <li key={buyer.id}>
-            <BuyerCloud
+            <BuyerCard
               buyer={buyer}
+              index={i}
+              total={buyers.length}
               selected={chosenId === buyer.id}
               onSelect={() => {
                 haptics.select();
@@ -46,15 +49,12 @@ export function BuyersScreen() {
 
       {picked && (
         <Surface kind="paper" as="article" className="mx-auto w-full">
-          <p className="font-legend text-[11px] uppercase tracking-[0.08em] text-anchor/45">
-            {LAW_LEGEND[picked.law]}
-          </p>
-          <p className="mt-2 font-display text-display-sm leading-tight text-anchor">
+          <p className="font-display text-display-sm leading-tight text-paper-ink">
             {picked.label}
           </p>
           <p className="mt-3">{picked.verdict}</p>
 
-          <div className="mt-5 border-t border-anchor/10 pt-4">
+          <div className="mt-5 border-t border-line pt-4">
             {buyersConclusion.map((line) => (
               <p key={line} className="mt-3 first:mt-0">
                 {line}
@@ -64,7 +64,7 @@ export function BuyersScreen() {
         </Surface>
       )}
 
-      <Button law="anchor" full disabled={!picked} onClick={next}>
+      <Button full disabled={!picked} onClick={next}>
         {buyersPrompt.after}
       </Button>
     </div>

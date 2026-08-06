@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import type { Block } from '@/content/types';
 import {
   assistantAudience,
   assistantAudienceInvite,
@@ -13,7 +14,6 @@ import { useFunnel, type LeverId } from '@/store/funnel';
 import { useStepNav } from '@/router/useStepNav';
 import { Blocks } from '@/ui/Blocks';
 import { Button } from '@/ui/Button';
-import { CurvedHeading } from '@/ui/CurvedHeading';
 import { ExternalButton } from '@/ui/ExternalButton';
 import { Surface } from '@/ui/Surface';
 import { VideoScreen } from '@/features/video/VideoScreen';
@@ -32,27 +32,28 @@ function useUnlock(lever: LeverId) {
   }, [unlock, lever]);
 }
 
-/** Шаг 6. Финал первого видео: смена картины мира и первый ассистент. */
+/** Шаг 6. Финал первого видео: смена картины мира и первый ассистент. Акт III. */
 export function AudienceLeverScreen() {
   useUnlock('audience');
   const { next } = useStepNav();
 
+  const outroBlocks: Block[] = video1Outro.blocks;
+  const inviteBlocks: Block[] = assistantAudienceInvite.map((text) => ({ kind: 'p', text }));
+
   return (
     <div className="flex flex-col gap-6 px-4 pb-10 pt-2">
-      <CurvedHeading text={video1Outro.title} law={video1Outro.law} size="md" level={1} />
+      <h1 className="font-display text-display-md uppercase leading-tight text-ink">
+        {video1Outro.title}
+      </h1>
 
       <Surface kind="paper" as="article" className="mx-auto w-full">
-        <Blocks blocks={video1Outro.blocks} />
+        <Blocks blocks={outroBlocks} />
       </Surface>
 
       <div className="mx-auto flex w-full max-w-prose flex-col gap-3">
-        {assistantAudienceInvite.map((line) => (
-          <p key={line} className="text-orbit/80">
-            {line}
-          </p>
-        ))}
-        <ExternalButton action={assistantAudience} law="updraft" />
-        <Button tone="quiet" law="orbit" full onClick={next}>
+        <Blocks blocks={inviteBlocks} className="text-ink" />
+        <ExternalButton action={assistantAudience} />
+        <Button tone="quiet" full onClick={next}>
           {video1Outro.next}
         </Button>
       </div>
@@ -60,10 +61,12 @@ export function AudienceLeverScreen() {
   );
 }
 
-/** Шаг 8. Второе видео: офферы, второй ассистент и слова перед допуском. */
+/** Шаг 8. Второе видео: офферы, второй ассистент и слова перед допуском. Акт IV. */
 export function OfferLeverScreen() {
   useUnlock('offer');
   const { next } = useStepNav();
+
+  const outroBlocks: Block[] = video2Outro.map((text) => ({ kind: 'p', text }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -72,17 +75,13 @@ export function OfferLeverScreen() {
       <VideoScreen content={video2} onNext={() => undefined} />
 
       <div className="mx-auto flex w-full max-w-prose flex-col gap-4 px-4 pb-10">
-        <ExternalButton action={assistantOffer} law="updraft" />
+        <ExternalButton action={assistantOffer} />
 
         <Surface kind="paper" className="w-full">
-          {video2Outro.map((line) => (
-            <p key={line} className="mt-3 first:mt-0">
-              {line}
-            </p>
-          ))}
+          <Blocks blocks={outroBlocks} />
         </Surface>
 
-        <Button law="deflect" full onClick={next}>
+        <Button full onClick={next}>
           {video2.next}
         </Button>
       </div>
@@ -90,24 +89,19 @@ export function OfferLeverScreen() {
   );
 }
 
-/** Шаг 12. Третье видео. Перед ним — переход, замыкающий вторую часть. */
+/** Шаг 12. Третье видео. Перед ним — переход, замыкающий вторую часть. Акт VI. */
 export function LandingLeverScreen() {
   useUnlock('landing');
+
+  const introBlocks: Block[] = beforeVideo3.blocks.map((text) => ({ kind: 'p', text }));
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 px-4 pt-2">
-        <CurvedHeading
-          text={beforeVideo3.title}
-          law={beforeVideo3.law}
-          size="sm"
-          level={2}
-        />
-        {beforeVideo3.blocks.map((line) => (
-          <p key={line} className="text-orbit/80">
-            {line}
-          </p>
-        ))}
+        <h2 className="font-display text-display-sm uppercase leading-tight text-ink">
+          {beforeVideo3.title}
+        </h2>
+        <Blocks blocks={introBlocks} className="text-ink-dim" />
       </div>
 
       <VideoScreen content={video3} />

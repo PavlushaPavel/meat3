@@ -2,16 +2,18 @@ import type { ElementType, ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
 /**
- * Две поверхности мира (docs/SPEC.md §1):
- *  - `paper`  — бумага облака: карточка для длинного чтения, тёмный текст
- *               на `--cloud-paper`, мера строки ~65–70 знаков.
- *  - `ground` — прозрачная поверхность на земле: светлый текст поверх
- *               `--garden-ground`, без собственной подложки.
+ * Две поверхности мира (docs/SPEC.md §1, §1.5):
+ *  - `paper`  — бумага акта: жёсткая карточка длинного чтения — своя у
+ *               каждого акта (`--color-paper`/`--color-paper-ink`), но
+ *               контраст внутри всегда честный, посчитан вручную
+ *               (см. `tokens.css`, все пары ≥4.5:1). Форма — прямой
+ *               прямоугольник с тонкой рамкой и офсетной тенью, как
+ *               подшитый в дело лист, не воздушная карточка.
+ *  - `ground` — прозрачная поверхность прямо на сцене: светлый/тёмный текст
+ *               (в зависимости от полярности акта) поверх `--color-scene`,
+ *               без собственной подложки.
  *
- * Контрасты (WCAG, посчитано для этой пары токенов):
- *  - anchor  на cloud-paper   → 15.9:1
- *  - orbit   на garden-ground → 9.6:1
- *  - moss-veil на garden-ground → 5.4:1 (вторичный текст на земле)
+ * Публичный API не меняется относительно прежнего мира.
  */
 
 export type SurfaceKind = 'paper' | 'ground';
@@ -26,21 +28,20 @@ export interface SurfaceProps {
 
 const KIND_CLASSES: Record<SurfaceKind, string> = {
   paper: cn(
-    'bg-cloud-paper text-anchor',
-    // Бумага облака — материал, а не заливка: зерно и мягкий подсвет сверху,
-    // как у земли. Без этого глубина просто переезжает с фона на передний
-    // план, и главный объём контента остаётся единственной плоской плашкой.
-    // Класс объявлен в globals.css внутри @layer base и трогает только
-    // background-image, поэтому с утилитой bg-cloud-paper не спорит.
+    'bg-paper text-paper-ink',
+    // Зерно и подсвет сверху — бумага тоже материал, не стерильная заливка
+    // (globals.css, класс живёт в @layer base и трогает только background-image,
+    // поэтому с утилитой bg-paper конкуренции нет).
     'surface-paper-grain',
-    'rounded-pond shadow-paper',
+    'rounded-sm border border-line shadow-card',
     'px-5 py-6',
-    // Мера строки длинного чтения ~65–70 знаков — родная форма мира, не уступка.
+    // Мера строки длинного чтения — родная форма мира, не уступка: max-w-prose
+    // здесь встроенная утилита Tailwind (65ch), отдельного токена не нужно.
     'max-w-prose',
     'font-body text-base leading-[var(--text-base--line-height)]',
   ),
   ground: cn(
-    'bg-transparent text-orbit',
+    'bg-transparent text-ink',
     'font-body text-base leading-[var(--text-base--line-height)]',
   ),
 };
