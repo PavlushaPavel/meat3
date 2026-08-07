@@ -1,34 +1,41 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/cn';
-import { ACTS, type ActId } from '@/acts';
+import { STAGES, type StageId } from '@/acts';
+import { Crystal } from './Crystal';
+import { PurityMeter } from './PurityMeter';
 
 /**
- * Титульная карточка акта (docs/SPEC.md §3.8). Показывается один раз при
- * входе в новый акт — родитель решает когда, используя `isFirstStepOfAct`
- * из `src/acts.ts`; сама карточка ничего не знает про маршрут.
- *
- * «Крупно, кинематографично, на чёрном» — фон всегда буквально чёрный,
- * независимо от акта (акт II светлый по сцене, но титульная карточка не
- * часть сцены — это межкадровая склейка, как титры в самом сериале). Акт
- * присутствует всё равно: `data-act` на корне карточки красит номер и
- * название текущим `--color-accent` — короткая вспышка цвета, в который
- * сейчас упадёт мир, на нейтральном чёрном фоне. Все шесть акцентов
- * проверены на контраст к чёрному вручную (≥5.4:1, отчёт задачи).
+ * Карточка стадии (docs/SPEC.md §3.8). Заменяет `ActTitleCard` снесённого
+ * мира «Шесть актов»: тот показывал номер и название акта и «где сейчас
+ * герой» на чёрном титре. Здесь то же событие — вход на новый этап синтеза —
+ * читается как показание прибора, а не киношный титр: номер и название
+ * этапа, что происходит с партией, и НОВОЕ показание чистоты, которое сам
+ * набегает (через `PurityMeter`, смонтированный заново на каждый показ —
+ * `key={stage}` в `App.tsx` форсирует ремонт, поэтому набег всегда идёт с
+ * нуля, а не продолжает прошлый этап: это отдельное, разовое измерение
+ * партии, а не тот же прибор, что в шапке). Маленький кристалл рядом —
+ * то же самое усиление, что и в шапке (`Crystal`), не отдельная метафора.
  *
  * Держится `AUTO_DISMISS_MS`, пропускается тапом/Enter/Space в любой момент
  * (корень — `<button>`, значит и клавиатура работает бесплатно). При
  * `prefers-reduced-motion: reduce` показывается без анимации — просто есть,
  * потом просто нет, тайминг и пропуск работают как обычно.
+ *
+ * `data-act-title` на корне — ИМЯ АТРИБУТА СОХРАНЕНО БУКВАЛЬНО, хотя мир
+ * больше не про акты: на него завязан внешний автопрогон скриншотов, и
+ * задача прямо требует не трогать этот маркер. Переименование здесь сломало
+ * бы чужую автоматизацию без всякой пользы самому миру.
  */
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const AUTO_DISMISS_MS = 2600;
 const EXIT_DURATION_S = 0.32;
 
-/** Копия живого хука `prefers-reduced-motion` — та же логика живёт в
- * `NightBloom.tsx`/`RainMessage.tsx` (см. комментарий там: `ui/*` не тянет
- * общий хук из чужих `features/*`, которые правит другой агент). */
+/** Копия живого хука `prefers-reduced-motion` — та же логика в
+ * `PurityMeter.tsx`/`HazardTape.tsx` не нуждается в ней (она не анимирует
+ * JS-таймером), но `ui/*` последовательно не тянет общий хук из чужих
+ * `features/*`, которые правит другой агент. */
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState<boolean>(() =>
     typeof window === 'undefined' || typeof window.matchMedia !== 'function'
@@ -48,8 +55,8 @@ function useReducedMotion(): boolean {
   return reduced;
 }
 
-export interface ActTitleCardProps {
-  act: ActId;
+export interface StageCardProps {
+  stage: StageId;
   /**
    * Вызывается РОВНО один раз — после того как карточка уже визуально
    * закрылась (по тайм-ауту или по тапу). К этому моменту она либо
@@ -60,9 +67,9 @@ export interface ActTitleCardProps {
   className?: string;
 }
 
-export function ActTitleCard({ act, onDone, className }: ActTitleCardProps) {
+export function StageCard({ stage, onDone, className }: StageCardProps) {
   const reduced = useReducedMotion();
-  const data = ACTS[act];
+  const data = STAGES[stage];
   const [phase, setPhase] = useState<'in' | 'out'>('in');
 
   // onDone может быть новым замыканием на каждый рендер родителя — держим
@@ -77,7 +84,7 @@ export function ActTitleCard({ act, onDone, className }: ActTitleCardProps) {
     setPhase('in');
     const timer = window.setTimeout(dismiss, AUTO_DISMISS_MS);
     return () => window.clearTimeout(timer);
-  }, [act, dismiss]);
+  }, [stage, dismiss]);
 
   // Без анимации (reduced motion) выход мгновенный: сама смена phase на
   // 'out' и есть сигнал «можно убирать» — ждать `onAnimationComplete` неоткуда.
@@ -88,19 +95,27 @@ export function ActTitleCard({ act, onDone, className }: ActTitleCardProps) {
   const content = (
     <>
       <span className="font-legend text-legend uppercase tracking-[0.18em] text-white/45">
-        Акт {data.roman}
+        Этап {data.number} из 6
       </span>
       <span
         aria-hidden
         className="mt-2 block font-display text-display-xl leading-none text-accent"
       >
-        {data.roman}
+        {data.number}
       </span>
       <span className="mt-3 block font-display text-display-md leading-tight text-white">
         {data.title}
       </span>
-      <span className="mt-4 block max-w-[30ch] font-body text-lg text-white/70">{data.hero}</span>
-      <span className="mt-10 block font-legend text-legend uppercase tracking-[0.14em] text-white/35">
+      <span className="mt-4 block max-w-[30ch] font-body text-lg text-white/70">
+        {data.process}
+      </span>
+
+      <span className="mt-8 flex items-center gap-3">
+        <Crystal stage={stage} className="h-9 w-9" />
+        <PurityMeter key={stage} stage={stage} className="flex-1" />
+      </span>
+
+      <span className="mt-8 block font-legend text-legend uppercase tracking-[0.14em] text-white/35">
         Коснись экрана — дальше
       </span>
     </>
@@ -119,7 +134,7 @@ export function ActTitleCard({ act, onDone, className }: ActTitleCardProps) {
       <button
         type="button"
         data-act-title=""
-        data-act={act}
+        data-stage={stage}
         onClick={dismiss}
         className={rootClassName}
         style={{ opacity: phase === 'out' ? 0 : 1 }}
@@ -133,7 +148,7 @@ export function ActTitleCard({ act, onDone, className }: ActTitleCardProps) {
     <motion.button
       type="button"
       data-act-title=""
-      data-act={act}
+      data-stage={stage}
       onClick={dismiss}
       className={rootClassName}
       initial={{ opacity: 0, y: 12 }}

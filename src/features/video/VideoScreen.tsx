@@ -8,21 +8,33 @@ import { useStepNav } from '@/router/useStepNav';
 import { VideoFrame } from './VideoFrame';
 
 /**
- * Экран видео — предметный кадр в грейде акта (docs/SPEC.md §1, §3.5).
+ * Экран видео — предметный кадр в приборной эстетике текущего этапа
+ * (docs/SPEC.md §1, §3.5).
  *
  * Записей пока нет — это нормальное рабочее состояние, а не ошибка: кадр
  * стоит неподвижно и честно говорит об этом, кнопка «дальше» всё равно
  * доступна. Битого плеера, вечного спиннера и белого экрана быть не может.
- * Смысл фрагмента лежит под кадром на бумаге акта — человек, который сейчас
+ * Смысл фрагмента лежит под кадром на бумаге этапа — человек, который сейчас
  * не может посмотреть видео, всё равно проходит воронку и получает смену
  * картины мира.
  */
 export function VideoScreen({
   content,
   onNext,
+  hideAdvance = false,
 }: {
   content: VideoContent;
   onNext?: () => void;
+  /**
+   * Спрятать собственную кнопку перехода.
+   *
+   * Нужно там, где экран видео вложен в другой экран и настоящий переход
+   * живёт ниже — на шаге 8 под видео идут ассистент и слова перед контролем.
+   * Раньше это решалось пустым `onNext`, и кнопка выглядела рабочей, но по
+   * тапу молча ничего не делала. Кнопка, которая обманывает ожидание, хуже
+   * отсутствующей.
+   */
+  hideAdvance?: boolean;
 }) {
   const { next } = useStepNav();
   const src = env.video[content.envVar];
@@ -44,11 +56,13 @@ export function VideoScreen({
         <Blocks blocks={content.blocks} />
       </Surface>
 
-      <div className="mx-auto w-full max-w-prose">
-        <Button full onClick={onNext ?? next}>
-          {content.next}
-        </Button>
-      </div>
+      {!hideAdvance && (
+        <div className="mx-auto w-full max-w-prose">
+          <Button full onClick={onNext ?? next}>
+            {content.next}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

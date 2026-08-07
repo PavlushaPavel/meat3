@@ -3,24 +3,23 @@
 @import './fonts.css';
 
 /**
- * ЛОВУШКА (проверено осознанно, унаследовано из прежней версии этого файла —
- * см. историю задачи «Редизайн v3»): в Tailwind 4 незаслоённые правила
- * (объявленные вне `@layer`) выигрывают у ЛЮБЫХ заслоённых утилит независимо
- * от специфичности — утилиты Tailwind живут в `@layer utilities`, и в
- * каскадных слоях специфичность внутри порядка слоёв не спасает. Если
- * написать здесь `*, *::before, *::after { margin: 0; padding: 0 }` БЕЗ
- * обёртки `@layer base`, это правило станет незаслоённым и перебьёт все
- * утилиты вида `p-4`, `m-2`, `bg-scene` и т.п. — сборка, тесты, линт и типы
- * при этом останутся зелёными, а `getComputedStyle` молча покажет
- * `padding: 0px`. Поэтому весь сброс и материал мира ниже обёрнуты в
- * `@layer base`. Доказано `src/styles/tokens.test.tsx`: тест собирает
- * настоящий CSS через `tailwindcss.compile()` (тот же компилятор, что
- * `@tailwindcss/vite`) и проверяет байты вывода — что `*, *::before,
- * *::after {…}` лежит именно внутри `@layer base`, а не снаружи. `@layer
- * theme, base, components, utilities;` объявляется Tailwind первой строкой и
- * фиксирует порядок слоёв независимо от места объявления — слой `base`
- * гарантированно проигрывает `utilities`, только пока правило внутри него
- * ЗАСЛОЕНО.
+ * ЛОВУШКА (проверено осознанно, унаследовано из прежней версии этого файла):
+ * в Tailwind 4 незаслоённые правила (объявленные вне `@layer`) выигрывают у
+ * ЛЮБЫХ заслоённых утилит независимо от специфичности — утилиты Tailwind
+ * живут в `@layer utilities`, и в каскадных слоях специфичность внутри
+ * порядка слоёв не спасает. Если написать здесь `*, *::before, *::after {
+ * margin: 0; padding: 0 }` БЕЗ обёртки `@layer base`, это правило станет
+ * незаслоённым и перебьёт все утилиты вида `p-4`, `m-2`, `bg-scene` и т.п. —
+ * сборка, тесты, линт и типы при этом останутся зелёными, а
+ * `getComputedStyle` молча покажет `padding: 0px`. Поэтому весь сброс и
+ * материал мира ниже обёрнуты в `@layer base`. Доказано
+ * `src/styles/tokens.test.tsx`: тест собирает настоящий CSS через
+ * `tailwindcss.compile()` (тот же компилятор, что `@tailwindcss/vite`) и
+ * проверяет байты вывода — что `*, *::before, *::after {…}` лежит именно
+ * внутри `@layer base`, а не снаружи. `@layer theme, base, components,
+ * utilities;` объявляется Tailwind первой строкой и фиксирует порядок слоёв
+ * независимо от места объявления — слой `base` гарантированно проигрывает
+ * `utilities`, только пока правило внутри него ЗАСЛОЕНО.
  */
 @layer base {
   *,
@@ -98,26 +97,26 @@
   }
 
   /* ============================================================
-   * МАТЕРИАЛ МИРА (docs/SPEC.md §1: «Грязь обязательна» + «Свет — главный
-   * инструмент»). Три переиспользуемых слоя, которыми `ActStage.tsx`
-   * собирает сцену акта — только CSS/SVG, ни одного растрового файла, без
-   * `backdrop-filter` на весь экран, без анимированных `filter`.
+   * МАТЕРИАЛ МИРА (docs/SPEC.md §1: цех-лаборатория, не кинокадр). Слои,
+   * которыми `ActStage.tsx` собирает сцену этапа — только CSS/SVG, ни одного
+   * растрового файла, без `backdrop-filter` на весь экран, без анимированных
+   * `filter`.
    *
-   * Все три класса читают ТЕКУЩИЙ акт через `--color-*`/`--grain-opacity`/
-   * `--vignette-strength`, объявленные заново на каждом `[data-act]` (без
-   * промежуточного уровня косвенности — см. комментарий в tokens.css), поэтому
-   * достаточно сменить `data-act` на обёртке `ActStage`, чтобы сразу
-   * поменялись цвет сцены (см. body/html выше), характер зерна, сила
+   * Все классы читают ТЕКУЩИЙ этап через `--color-*`/`--grain-opacity`/
+   * `--vignette-strength`, объявленные заново на каждом `[data-stage]` (без
+   * промежуточного уровня косвенности — см. комментарий в tokens.css),
+   * поэтому достаточно сменить `data-stage` на обёртке `ActStage`, чтобы
+   * сразу поменялись цвет сцены (см. body/html выше), характер зерна, сила
    * виньетки и форма источника света — один переключатель на весь набор.
    * ============================================================ */
 
   /**
-   * Зерно плёнки. Полупрозрачный белый шум (feTurbulence, alpha-only) поверх
-   * сцены с `mix-blend-mode: overlay` — цвет не зашит: overlay сам берёт
-   * характер от того, что под ним, поэтому один и тот же SVG выглядит
-   * по-разному на светлой сцене акта II и на чёрной сцене акта V. Плотность
-   * зерна — это `--grain-opacity` (0..1), собственный параметр каждого акта:
-   * гуще в пыли и в допросной, тоньше на стали и в финале.
+   * Зерно — не киноплёнка, а грязь/пыль цеха: полупрозрачный белый шум
+   * (feTurbulence, alpha-only) поверх сцены с `mix-blend-mode: overlay` —
+   * цвет не зашит: overlay сам берёт характер от того, что под ним, поэтому
+   * один и тот же SVG выглядит по-разному на грязном этапе 1 и на чистом
+   * этапе 6. Плотность — `--grain-opacity` (0..1): гуще в браке и на
+   * контроле, тоньше на чистом продукте.
    */
   .stage-grain {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -128,10 +127,10 @@
   }
 
   /**
-   * Виньетка: тёмный край кадра, дно — `--color-scene-deep`, тот же токен,
-   * которым акт красит собственную глубину, — не новый цвет, буквальный
-   * «провал в глубину» сцены. Сила — `--vignette-strength` (0..1): сильнее всего
-   * в акте V («всё остальное в темноте»), слабее всего в I и VI.
+   * Виньетка: тёмный край кадра цеха, дно — `--color-scene-deep`, тот же
+   * токен, которым этап красит собственную глубину. Сила —
+   * `--vignette-strength` (0..1): сильнее всего на контроле (этап 5, «проба
+   * под давлением»), слабее всего на браке и на чистом продукте.
    */
   .stage-vignette {
     background: radial-gradient(
@@ -143,159 +142,193 @@
   }
 
   /**
-   * Источник света. Форма и положение — предметный признак акта, а не
-   * оттенок: панель офиса сверху, жёсткое солнце, узкий холодный луч,
-   * свечение изнутри, конус лампы допроса, ровный тёплый свет. Базовый
-   * класс задаёт только геометрию слоя; каждый `[data-act]` ниже red-ставит
-   * `background` и, где нужно, статичную по интенсивности, но живую по
-   * времени петлю (дрожь лампы, марево, дыхание свечения — docs/SPEC.md §1
-   * «Движение»: «одно оркестрованное событие на экран»).
+   * Источник света прибора. Форма и положение — предметный признак этапа:
+   * аварийный маячок под потолком, дежурная подсветка панели без показаний,
+   * сфокусированный луч анализа, свечение реакции изнутри, конус лампы
+   * контроля, ровный свет готового продукта. Базовый класс задаёт только
+   * геометрию слоя; каждый `[data-stage]` ниже переопределяет `background`
+   * и, где нужно, петлю по времени (дребезг маячка, скан панели, дыхание
+   * реакции — docs/SPEC.md §1 «Движение»: «одно оркестрованное событие на
+   * экран»).
    */
   .stage-light {
     background: none;
   }
 
-  [data-act='i'] .stage-light {
-    /* Люминесцентная панель во всю ширину сверху + едва заметные швы решётки
-       плафона. Ни одной мягкой тени — свет ровный, приборный. */
-    background:
-      repeating-linear-gradient(
-        90deg,
-        color-mix(in oklab, var(--color-glow) 10%, transparent) 0 2px,
-        transparent 2px 64px
-      ),
-      linear-gradient(180deg, color-mix(in oklab, var(--color-glow) 60%, transparent) 0%, transparent 32%);
-    animation: stage-flicker-i var(--duration-ambient) var(--ease-ambient) infinite;
-  }
-
-  [data-act='ii'] .stage-light {
-    /* Жёсткое солнце строго сверху — резкий хотспот, не мягкое пятно — плюс
-       полоса марева, где горизонт «плывёт». */
-    background:
-      radial-gradient(
-        circle at 50% -8%,
-        color-mix(in oklab, var(--color-glow) 85%, transparent) 0%,
-        transparent 42%
-      ),
-      linear-gradient(
-        180deg,
-        transparent 52%,
-        color-mix(in oklab, var(--color-glow) 22%, transparent) 66%,
-        transparent 80%
-      );
-    animation: stage-haze-ii var(--duration-ambient) var(--ease-ambient) infinite alternate;
-  }
-
-  [data-act='iii'] .stage-light {
-    /* Узкий холодный луч по диагонали + частые тонкие полосы — отражения на
-       металле. Статично: «точный свет», без дрожи и без дыхания. */
-    background:
-      linear-gradient(
-        112deg,
-        color-mix(in oklab, var(--color-glow) 42%, transparent) 0%,
-        transparent 22%
-      ),
-      repeating-linear-gradient(
-        112deg,
-        color-mix(in oklab, var(--color-glow) 7%, transparent) 0 2px,
-        transparent 2px 22px
-      );
-  }
-
-  [data-act='iv'] .stage-light {
-    /* Свечение снизу-изнутри, не сверху — источник света в самом веществе,
-       не над сценой. Медленное дыхание. */
+  [data-stage='stage1'] .stage-light {
+    /* Аварийный маячок под потолком цеха — жёсткий хотспот сверху-по-центру,
+       не мягкое пятно, плюс частая дрожь: партия забракована, свет нервный. */
     background: radial-gradient(
-      ellipse 92% 62% at 50% 74%,
-      color-mix(in oklab, var(--color-glow) 55%, transparent) 0%,
+      ellipse 46% 30% at 50% -4%,
+      color-mix(in oklab, var(--color-glow) 88%, transparent) 0%,
       transparent 58%
     );
-    animation: stage-breathe-iv var(--duration-ambient) var(--ease-ambient) infinite alternate;
+    animation: stage-flicker-1 calc(var(--duration-ambient) * 0.55) var(--ease-ambient) infinite;
   }
 
-  [data-act='v'] .stage-light {
-    /* Узкий конус лампы допроса строго по центру сверху — всё остальное
-       съедает `.stage-vignette`. Лампа держится, но моргает на грани отказа. */
+  [data-stage='stage2'] .stage-light {
+    /* Панель включена, но без показаний: ровная тусклая подсветка снизу плюс
+       медленная линия сканирования — приборы ждут, ничего ещё не измерено. */
+    background:
+      repeating-linear-gradient(
+        0deg,
+        color-mix(in oklab, var(--color-glow) 6%, transparent) 0 1px,
+        transparent 1px 26px
+      ),
+      linear-gradient(0deg, color-mix(in oklab, var(--color-glow) 16%, transparent) 0%, transparent 40%);
+    animation: stage-scan-2 var(--duration-ambient) var(--ease-ambient) infinite;
+  }
+
+  [data-stage='stage3'] .stage-light {
+    /* Первый прибор ожил: сфокусированный луч анализа над пробой,
+       нижне-центральный, дышит — прибор только начал считать. */
     background: radial-gradient(
-      ellipse 42% 34% at 50% 0%,
-      color-mix(in oklab, var(--color-glow) 92%, transparent) 0%,
+      ellipse 60% 46% at 50% 78%,
+      color-mix(in oklab, var(--color-glow) 55%, transparent) 0%,
       transparent 60%
     );
-    animation: stage-flicker-v calc(var(--duration-ambient) * 1.5) var(--ease-ambient) infinite;
+    animation: stage-breathe-3 var(--duration-ambient) var(--ease-ambient) infinite alternate;
   }
 
-  [data-act='vi'] .stage-light {
-    /* Ровный тёплый свет — ничего резкого, ничего направленного. Спокойная
-       сила: единственный акт вообще без петли движения в источнике света. */
+  [data-stage='stage4'] .stage-light {
+    /* Реакция пошла — свет изнутри вещества, шире и ярче, чем на «Сырье»,
+       дыхание чаще: показания растут. */
+    background: radial-gradient(
+      ellipse 92% 58% at 50% 82%,
+      color-mix(in oklab, var(--color-glow) 68%, transparent) 0%,
+      transparent 58%
+    );
+    animation: stage-breathe-3 calc(var(--duration-ambient) * 0.7) var(--ease-ambient) infinite alternate;
+  }
+
+  [data-stage='stage5'] .stage-light {
+    /* Конус лампы контроля строго по центру сверху — всё остальное съедает
+       усиленная `.stage-vignette`. Лампа держится, но дрожит под давлением
+       проверки: та же тревога, что на браке, но контур уже, а не разлитый. */
+    background: radial-gradient(
+      ellipse 38% 32% at 50% 0%,
+      color-mix(in oklab, var(--color-glow) 92%, transparent) 0%,
+      transparent 58%
+    );
+    animation: stage-flicker-1 calc(var(--duration-ambient) * 1.3) var(--ease-ambient) infinite;
+  }
+
+  [data-stage='stage6'] .stage-light {
+    /* Ровный свет готового продукта — ничего резкого, ничего направленного,
+       без петли движения вообще: партия синтезирована, тревожиться больше
+       нечему. */
     background:
-      linear-gradient(180deg, color-mix(in oklab, var(--color-glow) 30%, transparent) 0%, transparent 46%),
+      linear-gradient(180deg, color-mix(in oklab, var(--color-glow) 22%, transparent) 0%, transparent 40%),
       radial-gradient(
         ellipse 130% 70% at 50% 100%,
-        color-mix(in oklab, var(--color-glow) 18%, transparent) 0%,
+        color-mix(in oklab, var(--color-glow) 26%, transparent) 0%,
         transparent 62%
       );
   }
 
-  @keyframes stage-flicker-i {
+  @keyframes stage-flicker-1 {
     0%,
-    91%,
+    88%,
     100% {
       opacity: 1;
     }
-    92% {
-      opacity: 0.82;
-    }
-    93% {
-      opacity: 1;
-    }
-    95% {
-      opacity: 0.88;
-    }
-    96% {
-      opacity: 1;
-    }
-  }
-
-  @keyframes stage-haze-ii {
-    from {
-      opacity: 0.82;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes stage-breathe-iv {
-    from {
+    89% {
       opacity: 0.72;
     }
+    90% {
+      opacity: 1;
+    }
+    93% {
+      opacity: 0.8;
+    }
+    94% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes stage-scan-2 {
+    from {
+      opacity: 0.7;
+    }
     to {
       opacity: 1;
     }
   }
 
-  @keyframes stage-flicker-v {
-    0%,
-    85%,
-    100% {
-      opacity: 1;
-    }
-    86% {
+  @keyframes stage-breathe-3 {
+    from {
       opacity: 0.68;
     }
-    88% {
-      opacity: 1;
-    }
-    90% {
-      opacity: 0.74;
-    }
-    92% {
+    to {
       opacity: 1;
     }
   }
 
   /**
-   * Бумага акта — тоже материал, не стерильная заливка (правило 3, §1).
+   * Развёртка пустого слота видео (`VideoFrame.tsx`, docs/SPEC.md §3.5).
+   * Материала пока нет, но прибор всё равно живой: тот же приём, что у
+   * `.stage-light` этапов 2/3 (медленная линия сканирования, дыхание) —
+   * применён здесь не к сцене вокруг, а к самому кадру, чтобы пустой слот
+   * читался как «прибор ждёт материал», а не как мёртвый/сломанный плеер.
+   * Чистый CSS, без JS-проверки reduced motion: общий барьер выше по файлу
+   * (`@media (prefers-reduced-motion: reduce)`) гасит `animation-duration`
+   * у любого потомка, включая эту петлю — тот же принцип, что у всех петель
+   * света сцены.
+   */
+  .video-empty-scan {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--color-ink-dim) 75%, transparent) 50%,
+      transparent
+    );
+    animation: video-scan-sweep var(--duration-ambient) var(--ease-ambient) infinite;
+    pointer-events: none;
+  }
+
+  @keyframes video-scan-sweep {
+    0% {
+      top: 6%;
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 0.6;
+    }
+    88% {
+      opacity: 0;
+    }
+    100% {
+      top: 94%;
+      opacity: 0;
+    }
+  }
+
+  /**
+   * Пульс жёлтой опасной разметки (`HazardTape.tsx`) — единственное место,
+   * где мигает сама разметка, а не свет сцены. Опора на opacity/scale, не на
+   * layout, чтобы не дёргать соседний текст. Скорость и амплитуда читаются
+   * компонентом через `animationDuration`/`opacity` инлайн-стилем (проп
+   * «степень тревоги»), сама петля здесь — общая форма.
+   */
+  @keyframes hazard-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.62;
+    }
+  }
+
+  /**
+   * Бумага этапа — тоже материал, не стерильная заливка (правило 3, §1).
    * Слабое зерно (та же текстура, вдвое приглушённей — под текстом оно
    * обязано быть на грани заметности) плюс мягкий подсвет сверху. Красит
    * только `background-image`, поэтому с утилитой `bg-paper` (свойство
@@ -311,10 +344,17 @@
 
   /* Воронка держится на движении (SPEC.md §1), но обязана оставаться
      проходимой при отключённой анимации — глобальный барьер поверх
-     точечных проверок prefers-reduced-motion в механике движения. Ловит и
-     дрожь лампы/марево/дыхание выше, и переход между актами в ActStage: обе
-     петли и оба transition читают --duration-* и обычные CSS-transition, а не
-     собственный таймер, поэтому один барьер держит их все. */
+     точечных проверок prefers-reduced-motion в механике движения. Ловит
+     дребезг/скан/дыхание источника света выше, развёртку пустого слота
+     видео (`.video-empty-scan`), пульс `HazardTape` и переход между этапами
+     в ActStage: все они читают --duration-* / обычные CSS-animation, а не
+     собственный таймер, поэтому один барьер держит их все. Набегание ЦИФР
+     показателя чистоты — JS-таймер, не CSS-transition, поэтому у него
+     отдельная проверка `prefers-reduced-motion` внутри `PurityMeter.tsx`
+     (деления шкалы там просто читают тот же таймер на каждом кадре — своей
+     CSS-анимации у них нет). Показание пробы в `Probes.tsx` анимирует
+     `motion`/`framer-motion`, который сам уважает системную настройку через
+     `useReducedMotionLive`/`useReducedMotion` в компоненте, а не этот CSS-барьер. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

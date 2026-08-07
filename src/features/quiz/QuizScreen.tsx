@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
 import type { Block } from '@/content/types';
 import { LIVES, quizFailed, quizIntro, quizPassed, quizQuestions } from '@/content/quiz';
 import { useFunnel } from '@/store/funnel';
@@ -9,8 +8,8 @@ import { Blocks } from '@/ui/Blocks';
 import { Button } from '@/ui/Button';
 import { Surface } from '@/ui/Surface';
 import { AnswerOption, type AnswerState } from './AnswerOption';
-import { Lives } from './Lives';
-import { useReducedMotionLive } from './useReducedMotionLive';
+import { Probes } from './Probes';
+import { ProbeAlarm } from './ProbeAlarm';
 
 const INTRO_FACTS_BLOCKS: Block[] = [{ kind: 'list', items: [...quizIntro.facts] }];
 
@@ -23,7 +22,7 @@ const INTRO_FACTS_BLOCKS: Block[] = [{ kind: 'list', items: [...quizIntro.facts]
 function QuizIntro({ onStart }: { onStart: () => void }) {
   return (
     <div className="flex flex-col items-center gap-6 px-4 pb-10 pt-6 text-center">
-      <Lives lives={LIVES} size="lg" />
+      <Probes probesLeft={LIVES} size="lg" />
       <h1 className="font-display text-display-md uppercase leading-tight text-ink">
         {quizIntro.title}
       </h1>
@@ -39,19 +38,22 @@ function QuizIntro({ onStart }: { onStart: () => void }) {
 }
 
 /**
- * Шаг 10. Допуск: 12 ситуаций, 5 жизней.
- *
- * Грейд акта V — тревожный красный на чёрном, лампа сверху, всё остальное в
- * темноте (docs/SPEC.md §1, §3.4). Жизни — ряд предметных жетонов (`Lives`),
- * а не строчка «осталось 3». Потеря жизни — событие: экран гасит короткой
- * красной вспышкой, свет садится ещё на шаг (пропускается при
- * `prefers-reduced-motion`, но сам жетон всё равно гаснет формой — воронка
- * остаётся осмысленной и без движения).
+ * Шаг 10. Допуск: 12 ситуаций, 5 жизней — пять проб партии на контроле,
+ * этап 5 (docs/SPEC.md §1, §3.4). Пробы — ряд предметных ячеек (`Probes`), а
+ * не строчка «осталось 3». Потеря пробы — событие: над вопросом густеет
+ * локальная жёлтая разметка (`ProbeAlarm`, поверх тех двух полос, что
+ * `ActStage` и так держит на всём этапе 5) — партия читаемо ближе к
+ * отбраковке с каждой следующей потерей (пропускается при
+ * `prefers-reduced-motion`, но сама разметка всё равно стоит на нужной
+ * интенсивности — воронка остаётся осмысленной и без движения).
  *
  * Разбор (`explanation`) показывается после ЛЮБОГО ответа, включая верный —
  * без него тест превращается в угадайку. При ошибке видно, какой вариант был
- * правильным: у него собственный знак и подпись, не только цвет заливки —
- * в этом акте оба смысловых цвета (`accent`/`danger`) сами по себе красные.
+ * правильным: у него собственный знак и подпись, не только цвет заливки.
+ *
+ * Кристалл на этом экране не растёт — провал стоит пробы, а не продукта
+ * (docs/SPEC.md §1, правило 3): экран не трогает `Crystal` вовсе, он общий в
+ * шапке (`App.tsx`) и весь этап 5 держит одно и то же значение.
  */
 export function QuizScreen() {
   const { go } = useStepNav();
@@ -62,7 +64,6 @@ export function QuizScreen() {
   const answer = useFunnel((s) => s.answer);
   const [picked, setPicked] = useState<string | null>(null);
   const [flashKey, setFlashKey] = useState(0);
-  const reduced = useReducedMotionLive();
 
   const started = order.length === quizQuestions.length;
   const finished = started && (lives <= 0 || cursor >= order.length);
@@ -104,26 +105,15 @@ export function QuizScreen() {
   }
 
   return (
-    <div className="relative flex flex-col gap-5 px-4 pb-10 pt-2">
-      {!reduced && flashKey > 0 && (
-        // Потеря жизни — событие сцены, не только жетона: короткая красная
-        // вспышка на весь кадр, свет допросной садится ещё на шаг.
-        <motion.div
-          key={flashKey}
-          aria-hidden
-          className="pointer-events-none fixed inset-0 z-[var(--z-overlay)] bg-danger"
-          initial={{ opacity: 0.5 }}
-          animate={{ opacity: 0 }}
-          transition={{ duration: 0.55, ease: [0.65, 0, 0.35, 1] }}
-        />
-      )}
-
+    <div className="relative flex flex-col gap-4 px-4 pb-10 pt-2">
       <div className="flex items-center justify-between gap-4">
         <span className="font-legend text-legend uppercase tracking-[0.08em] text-ink-dim">
           {cursor + 1} / {order.length}
         </span>
-        <Lives lives={lives} />
+        <Probes probesLeft={lives} />
       </div>
+
+      <ProbeAlarm probesLeft={lives} flashKey={flashKey} />
 
       <p className="text-ink-dim">{question.situation}</p>
       <h2 className="font-display text-display-sm uppercase leading-tight text-ink">
@@ -166,7 +156,15 @@ export function QuizScreen() {
   );
 }
 
-/** Шаг 11. Развилка: допуск получен или жизни кончились. */
+/**
+ * Шаг 11. Развилка: допуск получен или пробы кончились.
+ *
+ * Кристалл здесь не растёт и не появляется — это не его момент (docs/SPEC.md
+ * §1, правило 3: провал стоит пробы, а не продукта; удача переходит на
+ * этап 6 только на следующем шаге, `video3`). Экран не рисует свой кристалл
+ * ни при удаче, ни при провале — только общий в шапке (`App.tsx`), который
+ * держит значение этапа 5 до тех пор, пока человек не уйдёт дальше.
+ */
 export function VerdictScreen() {
   const { go } = useStepNav();
   const lives = useFunnel((s) => s.lives);
@@ -184,8 +182,8 @@ export function VerdictScreen() {
     ];
     return (
       <div className="flex flex-col items-center gap-6 px-4 pb-10 pt-2 text-center">
-        {/* Момент награды всей воронки: жетоны держатся полным рядом и светятся. */}
-        <Lives lives={lives} celebrate size="lg" />
+        {/* Момент допуска: ячейки проб держатся полным рядом и светятся. */}
+        <Probes probesLeft={lives} celebrate size="lg" />
         <h1 className="font-display text-display-lg uppercase leading-none text-ink">
           {quizPassed.title}
         </h1>
@@ -206,8 +204,8 @@ export function VerdictScreen() {
 
   return (
     <div className="flex flex-col items-center gap-6 px-4 pb-10 pt-2 text-center">
-      {/* Ряд пуст: все пять жетонов уже погасли — это финальная точка, не тихая цифра. */}
-      <Lives lives={0} size="lg" />
+      {/* Ряд пуст: все пять проб уже потеряны — это финальная точка, не тихая цифра. */}
+      <Probes probesLeft={0} size="lg" />
       <h1 className="font-display text-display-md uppercase leading-tight text-ink">
         {quizFailed.title}
       </h1>

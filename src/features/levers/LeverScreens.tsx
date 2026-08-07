@@ -32,7 +32,7 @@ function useUnlock(lever: LeverId) {
   }, [unlock, lever]);
 }
 
-/** Шаг 6. Финал первого видео: смена картины мира и первый ассистент. Акт III. */
+/** Шаг 6. Финал первого видео: смена картины мира и первый ассистент. Этап 3 СЫРЬЁ. */
 export function AudienceLeverScreen() {
   useUnlock('audience');
   const { next } = useStepNav();
@@ -61,7 +61,7 @@ export function AudienceLeverScreen() {
   );
 }
 
-/** Шаг 8. Второе видео: офферы, второй ассистент и слова перед допуском. Акт IV. */
+/** Шаг 8. Второе видео: офферы, второй ассистент и слова перед допуском. Этап 4 РЕАКЦИЯ. */
 export function OfferLeverScreen() {
   useUnlock('offer');
   const { next } = useStepNav();
@@ -70,9 +70,11 @@ export function OfferLeverScreen() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Переход дальше живёт ниже, под ассистентом и словами перед допуском,
-          поэтому собственная кнопка экрана видео здесь молчит. */}
-      <VideoScreen content={video2} onNext={() => undefined} />
+      {/* Переход дальше живёт ниже, под ассистентом и словами перед контролем,
+          поэтому собственная кнопка экрана видео здесь не рисуется вовсе.
+          Раньше ей подсовывали пустой обработчик — она выглядела рабочей и по
+          тапу молча ничего не делала. */}
+      <VideoScreen content={video2} hideAdvance />
 
       <div className="mx-auto flex w-full max-w-prose flex-col gap-4 px-4 pb-10">
         <ExternalButton action={assistantOffer} />
@@ -89,7 +91,7 @@ export function OfferLeverScreen() {
   );
 }
 
-/** Шаг 12. Третье видео. Перед ним — переход, замыкающий вторую часть. Акт VI. */
+/** Шаг 12. Третье видео. Перед ним — переход, замыкающий вторую часть. Этап 6 ЧИСТЫЙ ПРОДУКТ. */
 export function LandingLeverScreen() {
   useUnlock('landing');
 

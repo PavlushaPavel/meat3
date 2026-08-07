@@ -1,24 +1,29 @@
 /**
- * Тесты на токены мира «Шесть актов» и на саму ловушку каскадных слоёв
+ * Тесты на токены мира «Синтез партии» и на саму ловушку каскадных слоёв
  * Tailwind 4 (см. комментарий в src/styles/globals.css).
  *
- * ПОЧЕМУ ПЕРЕПИСАН ЦЕЛИКОМ: этот файл раньше проверял мир «Сад обратной
- * гравитации» (четыре закона, Unbounded/Onest/JetBrains Mono, --garden-*) —
- * заказчик забраковал этот мир целиком («мягко, поэтично, абстрактно») и
- * ввёл шесть актов взамен (docs/SPEC.md §1). Прежние утверждения проверяли
- * удалённые значения буквально (хексы --color-updraft и т.д.) — их нельзя
- * было «ослабить», можно было только заменить на утверждения про новый мир.
- * Ничего не смягчено: контраст, слои, кириллица проверяются так же строго,
- * как раньше, просто про другие цвета и другие гарнитуры.
+ * ПЕРЕПИСАН ЦЕЛИКОМ 07.08.2026: этот файл раньше проверял мир «Шесть актов»
+ * (шесть кинематографических грейдов, `data-act`, `ACT_ORDER` из
+ * `src/acts.ts`) — заказчик признал его рабочим по структуре, но не
+ * узнаваемым («максимально не узнаваемо относительно „Во все тяжкие“,
+ * хочется больше лаборатории и при этом с налётом ИИ», docs/SPEC.md §1) и
+ * выбрал три приметы нового мира по пунктам: показатель чистоты, синий
+ * кристалл-продукт, жёлтая опасная разметка только на этапах 1 и 5. Прежние
+ * утверждения проверяли удалённые значения буквально (хексы актов, `data-act`,
+ * «Акт {роман}» и т.д.) — их нельзя было «ослабить», можно было только
+ * заменить на утверждения про новый мир: те же принципы (буквальные значения
+ * без косвенности, ≥4.5:1 контраст, реальный компилятор вместо jsdom-разбора
+ * `@layer`) проверяются так же строго, просто про другие цвета, другой
+ * атрибут (`data-stage`) и шесть этапов синтеза вместо шести актов.
  *
- * ПОЧЕМУ НЕ ЧЕРЕЗ getComputedStyle/jsdom: jsdom (проверено локально версией
- * 25.0.1, установленной в проекте) не умеет парсить CSS с `@layer` вообще —
- * любой `<style>` с `@layer` в содержимом либо роняет весь stylesheet
- * (`style.sheet === null`), либо молча даёт 0 правил. Tailwind 4 всегда
- * оборачивает вывод в `@layer theme, base, components, utilities;`, поэтому
- * getComputedStyle для реального скомпилированного globals.css в этом jsdom
- * в принципе не работает — не только для проверки ловушки, а вообще для
- * любого токена.
+ * ПОЧЕМУ НЕ ЧЕРЕЗ getComputedStyle/jsdom (кроме одного явного случая ниже):
+ * jsdom (проверено локально версией 25.0.1, установленной в проекте) не
+ * умеет парсить CSS с `@layer` вообще — любой `<style>` с `@layer` в
+ * содержимом либо роняет весь stylesheet (`style.sheet === null`), либо
+ * молча даёт 0 правил. Tailwind 4 всегда оборачивает вывод в
+ * `@layer theme, base, components, utilities;`, поэтому getComputedStyle для
+ * реального скомпилированного globals.css в этом jsdom в принципе не
+ * работает — не только для проверки ловушки, а вообще для любого токена.
  *
  * Вместо этого здесь собирается РЕАЛЬНЫЙ CSS тем же компилятором Tailwind 4
  * (`tailwindcss.compile`), которым пользуется `@tailwindcss/vite` в проде, и
@@ -31,7 +36,7 @@ import { compile } from 'tailwindcss';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ACT_ORDER } from '@/acts';
+import { STAGE_ORDER, isHazardStage } from '@/acts';
 
 const stylesDir = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(stylesDir, '..', '..');
@@ -49,8 +54,10 @@ async function loadStylesheet(id: string, base: string) {
   return { path: resolved, base: dirname(resolved), content: readFileSync(resolved, 'utf8') };
 }
 
-/** Кандидаты утилит — то же, что реально используют ActStage/Badge/Button/
- * Surface/Blocks, плюс контрольные p-4/m-2 для ловушки слоёв. */
+/** Кандидаты утилит — то же, что реально используют ActStage/PurityMeter/
+ * Crystal/HazardTape/StageCard/Button/Surface/Blocks, плюс контрольные
+ * p-4/m-2 для ловушки слоёв и `tabular-nums` для проверки показаний
+ * приборов (docs/SPEC.md: цифры набега не должны «гулять» по ширине). */
 const CANDIDATES = [
   'p-4',
   'm-2',
@@ -82,6 +89,7 @@ const CANDIDATES = [
   'max-w-prose',
   'text-display-xl',
   'text-legend',
+  'tabular-nums',
 ];
 
 let css = '';
@@ -191,7 +199,7 @@ describe('globals.css — ловушка незаслоённого сброса
     expect(utilitiesBlock).toMatch(/\.m-2\s*{\s*margin:\s*calc\(var\(--spacing\)\s*\*\s*2\)/);
   });
 
-  it('material-слои (.stage-grain/.stage-vignette/.surface-paper-grain) живут ВНУТРИ второго @layer base', () => {
+  it('материал-слои (.stage-grain/.stage-vignette/.surface-paper-grain) живут ВНУТРИ второго @layer base', () => {
     for (const selector of ['.stage-grain {', '.stage-vignette {', '.surface-paper-grain {']) {
       const index = css.indexOf(selector);
       expect(index, `не найден ${selector}`).toBeGreaterThan(-1);
@@ -205,17 +213,16 @@ describe('globals.css — ловушка незаслоённого сброса
 
 describe('tokens.css — семантические цвета сцены НЕ идут через косвенное имя (регрессия)', () => {
   // РЕГРЕССИЯ: первая версия объявляла `--color-scene: var(--act-scene)`
-  // ОДИН РАЗ в @theme (только на :root), а каждый акт переопределял только
-  // `--act-scene`. Экранная проверка показала: все шесть актов рендерились
-  // идентично акту I. Причина — подстановка var() внутри кастомного свойства
-  // происходит там, где оно САМО объявлено (на :root, вычисляется в акт I),
-  // и дальше по дереву наследуется уже ГОТОВОЕ значение; переобъявление
-  // `--act-scene` глубже в дереве не участвует в вычислении `--color-scene`,
-  // потому что то нигде не переобъявлено на этом уровне. Тест ниже проверяет
-  // ровно то, что сломалось: НИ ОДНО из семантических имён не должно быть
-  // объявлено через `var(--что-то-ещё)` — только буквальным значением,
-  // на каждом уровне дерева, который его использует.
-  it('@theme объявляет --color-* буквальными значениями акта I, а не var(--что-то-ещё)', () => {
+  // ОДИН РАЗ в @theme (только на :root), а каждый этап переопределял только
+  // промежуточное имя. Причина — подстановка var() внутри кастомного
+  // свойства происходит там, где оно САМО объявлено, и дальше по дереву
+  // наследуется уже ГОТОВОЕ значение; переобъявление промежуточного имени
+  // глубже в дереве не участвует в вычислении семантического имени, потому
+  // что то нигде не переобъявлено на этом уровне. Тест ниже проверяет ровно
+  // то, что сломалось: НИ ОДНО из семантических имён не должно быть
+  // объявлено через `var(--что-то-ещё)` — только буквальным значением, на
+  // каждом уровне дерева, который его использует.
+  it('@theme объявляет --color-* буквальными значениями этапа 1, а не var(--что-то-ещё)', () => {
     const themeBlock = extractBlock(css, '@layer theme');
     const semanticNames = [
       '--color-scene',
@@ -243,9 +250,9 @@ describe('tokens.css — семантические цвета сцены НЕ �
     }
   });
 
-  it('КАЖДЫЙ [data-act] переобъявляет --color-* буквальным значением (не через var())', () => {
-    for (const act of ACT_ORDER) {
-      const block = extractBlock(css, `[data-act='${act}']`);
+  it('КАЖДЫЙ [data-stage] переобъявляет --color-* буквальным значением (не через var())', () => {
+    for (const stage of STAGE_ORDER) {
+      const block = extractBlock(css, `[data-stage='${stage}']`);
       for (const name of [
         '--color-scene',
         '--color-ink',
@@ -255,11 +262,11 @@ describe('tokens.css — семантические цвета сцены НЕ �
         '--color-glow',
       ]) {
         const m = block.match(new RegExp(`${name}:\\s*([^;]+);`));
-        expect(m, `акт ${act} не переобъявляет ${name}`).not.toBeNull();
+        expect(m, `этап ${stage} не переобъявляет ${name}`).not.toBeNull();
         const value = (m as RegExpMatchArray)[1].trim();
         expect(
           value.startsWith('var('),
-          `акт ${act}: ${name} объявлен через var() — вернулась старая ошибка косвенности`,
+          `этап ${stage}: ${name} объявлен через var() — вернулась старая ошибка косвенности`,
         ).toBe(false);
       }
     }
@@ -277,28 +284,29 @@ describe('tokens.css — семантические цвета сцены НЕ �
   });
 });
 
-describe('tokens.css — реальный браузерный каскад: два разных data-act ДЕЙСТВИТЕЛЬНО дают разный computed style', () => {
+describe('tokens.css — реальный браузерный каскад: два разных data-stage ДЕЙСТВИТЕЛЬНО дают разный computed style', () => {
   // Не строковый разбор CSS, а настоящий рендер: два вложенных элемента с
-  // разными `data-act` внутри одного документа, реальный CSSOM браузероподобного
-  // окружения (happy-dom из vitest browser mode недоступен — используем сам
-  // jsdom-документ текущего теста, он ЖИВОЙ DOM, в отличие от разбора текста
-  // выше). jsdom не умеет @layer — поэтому здесь CSS собирается заново без
-  // `@import`/`@layer`-обёрток: только сами правила `[data-act]` из tokens.css,
-  // вырезанные из уже скомпилированного `css` регулярным выражением, плюс
-  // единственная утилита, которая нас интересует.
-  it('элемент с data-act="v" внутри элемента с data-act="i" видит СВОЙ --color-scene, а не унаследованный', () => {
-    const actBlocksSource = ACT_ORDER.map((act) => extractBlock(css, `[data-act='${act}']`))
-      .map((block, i) => `[data-act='${ACT_ORDER[i]}'] { ${block} }`)
+  // разными `data-stage` внутри одного документа, реальный CSSOM
+  // браузероподобного окружения (happy-dom из vitest browser mode
+  // недоступен — используем сам jsdom-документ текущего теста, он ЖИВОЙ DOM,
+  // в отличие от разбора текста выше). jsdom не умеет @layer — поэтому
+  // здесь CSS собирается заново без `@import`/`@layer`-обёрток: только сами
+  // правила `[data-stage]` из tokens.css, вырезанные из уже
+  // скомпилированного `css` регулярным выражением, плюс единственная
+  // утилита, которая нас интересует.
+  it('элемент с data-stage="stage5" внутри элемента с data-stage="stage1" видит СВОЙ --color-scene, а не унаследованный', () => {
+    const stageBlocksSource = STAGE_ORDER.map((stage) => extractBlock(css, `[data-stage='${stage}']`))
+      .map((block, i) => `[data-stage='${STAGE_ORDER[i]}'] { ${block} }`)
       .join('\n');
 
     const style = document.createElement('style');
-    style.textContent = actBlocksSource;
+    style.textContent = stageBlocksSource;
     document.head.appendChild(style);
 
     const outer = document.createElement('div');
-    outer.setAttribute('data-act', 'i');
+    outer.setAttribute('data-stage', 'stage1');
     const inner = document.createElement('div');
-    inner.setAttribute('data-act', 'v');
+    inner.setAttribute('data-stage', 'stage5');
     outer.appendChild(inner);
     document.body.appendChild(outer);
 
@@ -308,16 +316,16 @@ describe('tokens.css — реальный браузерный каскад: д�
     document.body.removeChild(outer);
     document.head.removeChild(style);
 
-    expect(outerScene).toBe('#2b2a26');
+    expect(outerScene).toBe('#161412');
     // Это и есть регрессионная проверка: до исправления innerScene тоже был
-    // бы "#2b2a26" (унаследован от outer), несмотря на собственный
-    // `[data-act='v'] { --color-scene: #0a0706 }`.
-    expect(innerScene).toBe('#0a0706');
+    // бы "#161412" (унаследован от outer), несмотря на собственный
+    // `[data-stage='stage5'] { --color-scene: #0a0c0e }`.
+    expect(innerScene).toBe('#0a0c0e');
     expect(innerScene).not.toBe(outerScene);
   });
 });
 
-describe('tokens.css — шесть актов объявляют полный набор семантических переменных под своим data-act', () => {
+describe('tokens.css — шесть этапов объявляют полный набор семантических переменных под своим data-stage', () => {
   const SEMANTIC_VARS = [
     '--color-scene',
     '--color-scene-deep',
@@ -336,36 +344,37 @@ describe('tokens.css — шесть актов объявляют полный �
     '--vignette-strength',
   ];
 
-  // Хексы взяты из docs/SPEC.md §1 (theme-color для акта I) и из отчёта
-  // задачи (контраст посчитан вручную для всех пар — см. tokens.css).
+  // Хексы взяты из tokens.css (отчёт задачи — контраст ≥4.5:1 посчитан
+  // вручную для каждой пары «текст на своём фоне», включая on-accent/accent
+  // и on-danger/danger — мир не смягчает доступность ради грейда).
   const EXPECTED_SCENE: Record<string, string> = {
-    i: '#2b2a26', // theme-color в index.html — грейд первого акта
-    ii: '#c9a876',
-    iii: '#232b33',
-    iv: '#171d12',
-    v: '#0a0706',
-    vi: '#22221d',
+    stage1: '#161412', // theme-color в index.html — грейд первого этапа (брак)
+    stage2: '#14181c',
+    stage3: '#0f1720',
+    stage4: '#0b1620',
+    stage5: '#0a0c0e',
+    stage6: '#0a141c',
   };
 
-  it('все шесть актов из src/acts.ts перечислены и в этом порядке', () => {
-    expect([...ACT_ORDER]).toEqual(['i', 'ii', 'iii', 'iv', 'v', 'vi']);
+  it('все шесть этапов из src/acts.ts перечислены и в этом порядке', () => {
+    expect([...STAGE_ORDER]).toEqual(['stage1', 'stage2', 'stage3', 'stage4', 'stage5', 'stage6']);
   });
 
-  it.each(ACT_ORDER)('акт %s объявляет все 15 семантических переменных', (act) => {
-    const block = extractBlock(css, `[data-act='${act}']`);
+  it.each(STAGE_ORDER)('этап %s объявляет все 15 семантических переменных', (stage) => {
+    const block = extractBlock(css, `[data-stage='${stage}']`);
     for (const name of SEMANTIC_VARS) {
-      expect(block, `${act} не объявляет ${name}`).toContain(`${name}:`);
+      expect(block, `${stage} не объявляет ${name}`).toContain(`${name}:`);
     }
   });
 
-  it.each(ACT_ORDER)('акт %s: --color-scene совпадает с каноном (SPEC.md/отчёт задачи)', (act) => {
-    const block = extractBlock(css, `[data-act='${act}']`);
+  it.each(STAGE_ORDER)('этап %s: --color-scene совпадает с каноном (tokens.css/отчёт задачи)', (stage) => {
+    const block = extractBlock(css, `[data-stage='${stage}']`);
     const match = block.match(/--color-scene:\s*(#[0-9a-f]{6});/);
     expect(match).not.toBeNull();
-    expect((match as RegExpMatchArray)[1]).toBe(EXPECTED_SCENE[act]);
+    expect((match as RegExpMatchArray)[1]).toBe(EXPECTED_SCENE[stage]);
   });
 
-  it('акт V — самая тёмная сцена и самая сильная виньетка всего мира (docs/SPEC.md: «всё остальное в темноте»)', () => {
+  it('этап 5 (Контроль) — самая тёмная сцена и самая сильная виньетка всего мира (docs/SPEC.md: «проба под давлением»)', () => {
     function relLuminance(hex: string): number {
       const n = parseInt(hex.slice(1), 16);
       const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => {
@@ -374,18 +383,82 @@ describe('tokens.css — шесть актов объявляют полный �
       });
       return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     }
-    const luminances = ACT_ORDER.map((act) => {
-      const block = extractBlock(css, `[data-act='${act}']`);
+    const luminances = STAGE_ORDER.map((stage) => {
+      const block = extractBlock(css, `[data-stage='${stage}']`);
       const scene = (block.match(/--color-scene:\s*(#[0-9a-f]{6});/) as RegExpMatchArray)[1];
       return relLuminance(scene);
     });
-    const vignettes = ACT_ORDER.map((act) => {
-      const block = extractBlock(css, `[data-act='${act}']`);
+    const vignettes = STAGE_ORDER.map((stage) => {
+      const block = extractBlock(css, `[data-stage='${stage}']`);
       return Number((block.match(/--vignette-strength:\s*([\d.]+);/) as RegExpMatchArray)[1]);
     });
-    const vIndex = ACT_ORDER.indexOf('v');
-    expect(luminances[vIndex]).toBe(Math.min(...luminances));
-    expect(vignettes[vIndex]).toBe(Math.max(...vignettes));
+    const idx = STAGE_ORDER.indexOf('stage5');
+    expect(luminances[idx]).toBe(Math.min(...luminances));
+    expect(vignettes[idx]).toBe(Math.max(...vignettes));
+  });
+
+  it('--color-accent (синий продукта) не темнеет от этапа к этапу начиная с «Сырья» (этап 3) — кристалл растёт, никогда не уменьшается', () => {
+    // docs/SPEC.md §1, правило 3: провал контроля (этап 5) стоит пробы, а не
+    // продукта — яркость синего не должна откатиться назад между этапами
+    // 3→4→5→6. Этапы 1 и 2 намеренно исключены: там кристалла ещё нет или он
+    // необработанный зародыш, --color-accent там инертный, не «синий продукта».
+    function relLuminance(hex: string): number {
+      const n = parseInt(hex.slice(1), 16);
+      const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => {
+        const s = c / 255;
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    }
+    const productStages = ['stage3', 'stage4', 'stage5', 'stage6'] as const;
+    const luminances = productStages.map((stage) => {
+      const block = extractBlock(css, `[data-stage='${stage}']`);
+      const accent = (block.match(/--color-accent:\s*(#[0-9a-f]{6});/) as RegExpMatchArray)[1];
+      return relLuminance(accent);
+    });
+    for (let i = 1; i < luminances.length; i++) {
+      expect(
+        luminances[i],
+        `--color-accent этапа ${productStages[i]} темнее ${productStages[i - 1]} — кристалл «уменьшился»`,
+      ).toBeGreaterThanOrEqual(luminances[i - 1]);
+    }
+  });
+});
+
+describe('tokens.css — жёлтая опасная разметка только на этапах 1 и 5 (docs/SPEC.md §1, правило 4)', () => {
+  it('isHazardStage(из src/acts.ts) верно ровно для stage1 и stage5', () => {
+    for (const stage of STAGE_ORDER) {
+      const expected = stage === 'stage1' || stage === 'stage5';
+      expect(isHazardStage(stage), `isHazardStage(${stage})`).toBe(expected);
+    }
+  });
+
+  it('--color-danger этапов 1 и 5 — жёлтый (яркий по зелёному+красному каналу, тусклый по синему)', () => {
+    for (const stage of ['stage1', 'stage5'] as const) {
+      const block = extractBlock(css, `[data-stage='${stage}']`);
+      const hex = (block.match(/--color-danger:\s*(#[0-9a-f]{6});/) as RegExpMatchArray)[1];
+      const n = parseInt(hex.slice(1), 16);
+      const r = (n >> 16) & 255;
+      const g = (n >> 8) & 255;
+      const b = n & 255;
+      expect(r, `${stage}: danger r`).toBeGreaterThan(200);
+      expect(g, `${stage}: danger g`).toBeGreaterThan(150);
+      expect(b, `${stage}: danger b — жёлтый обязан быть тусклым по синему`).toBeLessThan(120);
+    }
+  });
+
+  it('--color-danger остальных этапов НЕ совпадает с жёлтым hazard-цветом — жёлтый не расползается по миру', () => {
+    const hazardHexes = new Set(
+      (['stage1', 'stage5'] as const).map((stage) => {
+        const block = extractBlock(css, `[data-stage='${stage}']`);
+        return (block.match(/--color-danger:\s*(#[0-9a-f]{6});/) as RegExpMatchArray)[1];
+      }),
+    );
+    for (const stage of ['stage2', 'stage3', 'stage4', 'stage6'] as const) {
+      const block = extractBlock(css, `[data-stage='${stage}']`);
+      const hex = (block.match(/--color-danger:\s*(#[0-9a-f]{6});/) as RegExpMatchArray)[1];
+      expect(hazardHexes.has(hex), `этап ${stage} использует hazard-жёлтый ${hex}`).toBe(false);
+    }
   });
 });
 
@@ -443,9 +516,16 @@ describe('tokens.css — гарнитуры мира (Oswald / PT Serif / JetBra
     const displayStack = (themeBlock.match(/--font-display:\s*([^;]+);/) as RegExpMatchArray)[1];
     expect(displayStack).toContain("'PT Serif'");
   });
+
+  it('утилита tabular-nums существует — показания приборов не «гуляют» по ширине на счёте (PurityMeter)', () => {
+    const utilitiesBlock = extractBlock(css, '@layer utilities');
+    expect(utilitiesBlock).toMatch(
+      /\.tabular-nums\s*{\s*--tw-numeric-spacing:\s*tabular-nums;/,
+    );
+  });
 });
 
-describe('tokens.css — радиусы маленькие (мир жёсткий, не мягкий)', () => {
+describe('tokens.css — радиусы маленькие (мир приборный, не мягкий)', () => {
   it('rounded-xs/sm/md существуют и не превышают 6px — верхний потолок скругления всего мира', () => {
     const utilitiesBlock = extractBlock(css, '@layer utilities');
     const xs = utilitiesBlock.match(/\.rounded-xs\s*{\s*border-radius:\s*var\(--radius-xs\);?\s*}/);
@@ -481,10 +561,11 @@ describe('tokens.css — тени жёсткие (офсет, без blur), не
 });
 
 describe('tokens.css — длительности движения (обычные custom properties, не @theme)', () => {
-  it('--duration-snap/scene/ambient объявлены с ожидаемыми значениями', () => {
+  it('--duration-snap/scene/ambient/purity объявлены с ожидаемыми значениями', () => {
     expect(css).toMatch(/--duration-snap:\s*150ms;/);
     expect(css).toMatch(/--duration-scene:\s*550ms;/);
     expect(css).toMatch(/--duration-ambient:\s*3200ms;/);
+    expect(css).toMatch(/--duration-purity:\s*900ms;/);
   });
 
   it('Tailwind не рождает utility-класс duration-scene (неймспейс --duration-* не поддержан в v4)', () => {
@@ -501,29 +582,29 @@ describe('tokens.css — длительности движения (обычны
   });
 });
 
-describe('globals.css — свет акта: у каждого data-act своя форма .stage-light', () => {
-  it.each(ACT_ORDER)('акт %s объявляет [data-act=\'%s\'] .stage-light с непустым background', (act) => {
-    const needle = `[data-act='${act}'] .stage-light {`;
+describe('globals.css — свет прибора: у каждого data-stage своя форма .stage-light', () => {
+  it.each(STAGE_ORDER)('этап %s объявляет [data-stage=\'%s\'] .stage-light с непустым background', (stage) => {
+    const needle = `[data-stage='${stage}'] .stage-light {`;
     const index = css.indexOf(needle);
     expect(index, `не найден ${needle}`).toBeGreaterThan(-1);
     const block = extractBlock(css, needle);
     expect(block).toMatch(/background:/);
   });
 
-  it('акт III («точный свет») — единственный без анимации источника света; I/II/IV/V — с петлёй', () => {
-    const withoutAnimation = extractBlock(css, "[data-act='iii'] .stage-light {");
+  it('этап 6 (Чистый продукт) — единственный без анимации источника света; остальные — с петлей', () => {
+    const withoutAnimation = extractBlock(css, "[data-stage='stage6'] .stage-light {");
     expect(withoutAnimation).not.toContain('animation:');
-    for (const act of ['i', 'ii', 'iv', 'v']) {
-      const block = extractBlock(css, `[data-act='${act}'] .stage-light {`);
-      expect(block, `акт ${act} обязан иметь петлю движения источника света`).toContain(
+    for (const stage of ['stage1', 'stage2', 'stage3', 'stage4', 'stage5']) {
+      const block = extractBlock(css, `[data-stage='${stage}'] .stage-light {`);
+      expect(block, `этап ${stage} обязан иметь петлю движения источника света`).toContain(
         'animation:',
       );
     }
   });
 
   it('вся анимация источника света читает --duration-ambient/--ease-ambient — общий барьер prefers-reduced-motion гасит все петли разом', () => {
-    for (const act of ['i', 'ii', 'iv', 'v']) {
-      const block = extractBlock(css, `[data-act='${act}'] .stage-light {`);
+    for (const stage of ['stage1', 'stage2', 'stage3', 'stage4', 'stage5']) {
+      const block = extractBlock(css, `[data-stage='${stage}'] .stage-light {`);
       expect(block).toContain('var(--duration-ambient)');
       expect(block).toContain('var(--ease-ambient)');
     }
@@ -554,11 +635,6 @@ describe('globals.css — безопасные зоны и поведение Te
   it('глобальный @media (prefers-reduced-motion: reduce) объявлен внутри @layer base и не повреждён случайным `*/` внутри комментария', () => {
     const index = css.indexOf('@media (prefers-reduced-motion: reduce)');
     expect(index).toBeGreaterThan(-1);
-    // Регрессия: комментарий выше этого правила раньше содержал буквальную
-    // подстроку `*/` внутри слова (--duration-*/обычные), что обрывало CSS-
-    // комментарий раньше времени и портило следующий за ним селектор — Tailwind
-    // молча компилировал мусор вместо `*, *::before, *::after`. Проверяем само
-    // селекторное тело, а не только факт присутствия строки.
     const block = extractBlock(css, '@media (prefers-reduced-motion: reduce)');
     expect(block).toMatch(/\*,\s*\*::before,\s*\*::after\s*{/);
     const headers = enclosingHeaders(css, index);

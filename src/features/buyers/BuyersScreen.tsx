@@ -4,18 +4,20 @@ import { useFunnel } from '@/store/funnel';
 import { useStepNav } from '@/router/useStepNav';
 import { Button } from '@/ui/Button';
 import { Surface } from '@/ui/Surface';
-import { BuyerCard } from './BuyerCard';
+import { ProbeCard } from './ProbeCard';
 
 /**
- * Шаг 5. Пять покупателей ремонта — карточки дела в грейде акта III
- * (docs/SPEC.md §3.3).
+ * Шаг 5. Пять покупателей ремонта — пять проб сырья под прибором ИИ, этап 3
+ * «Сырьё» (docs/SPEC.md §3.3, §1).
  *
  * Один и тот же запрос у пяти разных людей — весь смысл экрана читается
- * текстом карточек (`situation`), не абстрактной формой. Правильного ответа
- * нет: после выбора экран показывает разбор последствий (`verdict`), а не
- * оценку. Федя — единственный без причины действовать сейчас; это
- * разбирается в его `verdict` и никак не помечается как ошибка — ни здесь,
- * ни в `content/buyers.ts`.
+ * текстом карточек (`situation`) и живыми показаниями прибора (`ProbeCard`),
+ * не абстрактной формой. Правильного ответа нет: после выбора экран
+ * показывает разбор последствий (`verdict`), а не оценку. Федя — единственный
+ * без причины действовать сейчас; это разбирается в его `verdict` (и в нуле
+ * на обеих шкалах прибора) и никак не помечается как ошибка — ни здесь, ни в
+ * `content/buyers.ts`. Жёлтой опасной разметки на этом экране нет и быть не
+ * может: этап 3 не аварийный (docs/SPEC.md §1, правило 4).
  */
 export function BuyersScreen() {
   const { next } = useStepNav();
@@ -33,7 +35,7 @@ export function BuyersScreen() {
       <ul className="flex flex-col gap-2.5">
         {buyers.map((buyer, i) => (
           <li key={buyer.id}>
-            <BuyerCard
+            <ProbeCard
               buyer={buyer}
               index={i}
               total={buyers.length}

@@ -3,18 +3,24 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { buyers, buyersConclusion, buyersPrompt } from '@/content/buyers';
 import { useFunnel } from '@/store/funnel';
 import { BuyersScreen } from './BuyersScreen';
+import { PROBE_READINGS } from './probeReadings';
 
 /**
- * Шаг 5: пять покупателей ремонта, карточки дела в грейде акта III, правильного
- * ответа нет (docs/SPEC.md §3.3).
+ * Шаг 5: пять проб сырья под прибором ИИ, этап 3 «Сырьё», правильного ответа
+ * нет (docs/SPEC.md §3.3).
  *
  * `useFunnel` — модульный singleton (zustand), выбор покупателя переживает
  * между тестами одного файла, если его не сбрасывать явно.
  *
- * Карточки (`BuyerCard`) — обычная разметка на бумаге акта, без канваса и без
- * побочных DOM API, которые jsdom не реализует, поэтому здесь не нужен мок
- * `HTMLCanvasElement.prototype.getContext` (тот, что документирован в
- * `src/mechanics/GravityField.test.tsx`, — это уже другой, снесённый мир).
+ * Карточки (`ProbeCard`) — обычная разметка на бумаге этапа, без канваса и
+ * без побочных DOM API, которые jsdom не реализует, поэтому здесь не нужен
+ * мок `HTMLCanvasElement.prototype.getContext`.
+ *
+ * Живой счёт показаний прибора (`useProbeCountUp`) не мокается и не
+ * дожидается таймером: числа в разметке при монтировании стартуют от 0, а
+ * итоговое значение проверяется через недвижимую сводку для скринридера
+ * (`sr-only` внутри `ProbeCard`), которая содержит финальное число сразу, а
+ * не то, что показано в текущем кадре анимации.
  */
 function nextButton(): HTMLButtonElement {
   return screen.getByRole('button', { name: buyersPrompt.after }) as HTMLButtonElement;
@@ -136,6 +142,41 @@ describe('BuyersScreen — Федя не наказывается', () => {
   it('кнопка Феди не помечена как отключённая/неактивная в списке выбора', () => {
     render(<BuyersScreen />);
     expect(buyerButton(fedya.label).disabled).toBe(false);
+  });
+});
+
+describe('BuyersScreen — показания прибора на пробах сырья', () => {
+  it('сводка показаний прибора видна для каждой пробы и совпадает с PROBE_READINGS', () => {
+    render(<BuyersScreen />);
+    for (const buyer of buyers) {
+      const reading = PROBE_READINGS[buyer.id];
+      expect(reading).toBeDefined();
+      const expected = `Показания прибора: причина купить ${reading.cause} из 10, готовность действовать сейчас ${reading.readiness} из 10.`;
+      expect(screen.getByText(expected)).not.toBeNull();
+    }
+  });
+
+  it('показания различаются между пробами — не одно и то же число у всех пяти', () => {
+    const uniqueCause = new Set(buyers.map((b) => PROBE_READINGS[b.id].cause));
+    const uniqueReadiness = new Set(buyers.map((b) => PROBE_READINGS[b.id].readiness));
+    expect(uniqueCause.size).toBeGreaterThan(1);
+    expect(uniqueReadiness.size).toBeGreaterThan(1);
+  });
+
+  it('у Феди обе шкалы прибора на нуле — правда о человеке без причины действовать, не наказание формой', () => {
+    const fedya = buyers.find((b) => b.id === 'fedya');
+    if (!fedya) throw new Error('В content/buyers.ts должен быть покупатель fedya');
+    expect(PROBE_READINGS[fedya.id]).toEqual({ cause: 0, readiness: 0 });
+  });
+
+  it('карточка Феди рендерит ту же сводку показаний, что и остальные — не отдельную ветку разметки', () => {
+    render(<BuyersScreen />);
+    // Тот же формат фразы, что и у любой другой пробы (см. тест выше) — просто с нулями.
+    expect(
+      screen.getByText(
+        'Показания прибора: причина купить 0 из 10, готовность действовать сейчас 0 из 10.',
+      ),
+    ).not.toBeNull();
   });
 });
 

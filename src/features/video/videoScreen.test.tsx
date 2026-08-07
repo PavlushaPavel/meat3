@@ -54,7 +54,7 @@ afterEach(() => {
 });
 
 describe('VideoScreen — источника нет (рабочее состояние, не ошибка)', () => {
-  it('показывает честную подпись пруда и не рендерит <video>', async () => {
+  it('показывает честную подпись пустого кадра и не рендерит <video>', async () => {
     const VideoScreen = await loadVideoScreen('');
     const { container } = render(<VideoScreen content={content} onNext={() => {}} />);
 

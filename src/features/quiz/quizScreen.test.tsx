@@ -109,12 +109,49 @@ describe('QuizScreen — жизни', () => {
     expect(useFunnel.getState().cursor).toBe(1);
   });
 
-  it('счётчик жизней в шапке имеет текстовый эквивалент для скринридера и меняется после ошибки', () => {
+  it('счётчик проб в шапке имеет текстовый эквивалент для скринридера и меняется после ошибки', () => {
     render(<Harness />);
-    expect(screen.getByRole('group', { name: `Жизней: ${LIVES} из ${LIVES}` })).not.toBeNull();
+    expect(screen.getByRole('group', { name: `Проб цело: ${LIVES} из ${LIVES}` })).not.toBeNull();
 
     answerIncorrectly();
-    expect(screen.getByRole('group', { name: `Жизней: ${LIVES - 1} из ${LIVES}` })).not.toBeNull();
+    expect(screen.getByRole('group', { name: `Проб цело: ${LIVES - 1} из ${LIVES}` })).not.toBeNull();
+  });
+});
+
+describe('QuizScreen — аварийная разметка потери пробы', () => {
+  it('пока ни одна проба не потеряна, локальной разметки над вопросом нет', () => {
+    render(<Harness />);
+    // ProbeAlarm рендерит `null`, пока ни одна проба не потеряна
+    // (docs/SPEC.md §3.4: тревога появляется вместе с первой потерей, не
+    // висит с интро) — в дереве нет ни одной полосы с узнаваемым паттерном
+    // HazardTape (`repeating-linear-gradient`).
+    expect(document.querySelector('[style*="repeating-linear-gradient"]')).toBeNull();
+
+    answerCorrectly();
+    // Верный ответ не теряет пробу — разметка по-прежнему не появляется.
+    expect(document.querySelector('[style*="repeating-linear-gradient"]')).toBeNull();
+  });
+
+  it('после каждой потери пробы жёлтая разметка гуще: интенсивность растёт монотонно', () => {
+    render(<Harness />);
+
+    const readIntensity = (): number => {
+      const bar = document.querySelector<HTMLElement>(
+        '[style*="repeating-linear-gradient"]',
+      );
+      if (!bar) throw new Error('HazardTape не найдена в разметке после потери пробы');
+      const opacity = Number(bar.style.opacity);
+      // HazardTape: opacity = 0.7 + intensity * 0.3 — обратный пересчёт.
+      return (opacity - 0.7) / 0.3;
+    };
+
+    answerIncorrectly();
+    const afterFirst = readIntensity();
+
+    answerIncorrectly();
+    const afterSecond = readIntensity();
+
+    expect(afterSecond).toBeGreaterThan(afterFirst);
   });
 });
 
@@ -159,8 +196,6 @@ describe('QuizScreen — допуск получен', () => {
     }
     expect(useFunnel.getState().step).toBe('verdict');
     expect(useFunnel.getState().lives).toBe(LIVES);
-    // CurvedHeading дублирует текст (скрытый заголовок + SVG textPath) — берём
-    // именно доступную роль заголовка, а не текст-поиск по всему дереву.
     expect(screen.getByRole('heading', { name: quizPassed.title })).not.toBeNull();
     expect(screen.getByRole('button', { name: quizPassed.cta })).not.toBeNull();
   });
