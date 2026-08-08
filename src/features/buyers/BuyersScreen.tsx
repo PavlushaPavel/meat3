@@ -1,74 +1,108 @@
-import { buyers, buyersConclusion, buyersPrompt } from '@/content/buyers';
-import { haptics } from '@/lib/telegram';
+import { useState } from 'react';
+import { buyers, buyersConclusion, buyersPrompt, sampleQuery } from '@/content/buyers';
+import { useNav } from '@/router/useNav';
 import { useFunnel } from '@/store/funnel';
-import { useStepNav } from '@/router/useStepNav';
 import { Button } from '@/ui/Button';
-import { Surface } from '@/ui/Surface';
-import { ProbeCard } from './ProbeCard';
+import { Screen } from '@/ui/CityStage';
+import { MetalPanel } from '@/ui/MetalPanel';
+import { Legend } from '@/ui/Plate';
+import { haptics } from '@/lib/telegram';
+import { SampleCard } from './SampleCard';
 
 /**
- * Шаг 5. Пять покупателей ремонта — пять проб сырья под прибором ИИ, этап 3
- * «Сырьё» (docs/SPEC.md §3.3, §1).
+ * Шаг 10. Один запрос — пять образцов, и ставка бюджетом клиента.
  *
- * Один и тот же запрос у пяти разных людей — весь смысл экрана читается
- * текстом карточек (`situation`) и живыми показаниями прибора (`ProbeCard`),
- * не абстрактной формой. Правильного ответа нет: после выбора экран
- * показывает разбор последствий (`verdict`), а не оценку. Федя — единственный
- * без причины действовать сейчас; это разбирается в его `verdict` (и в нуле
- * на обеих шкалах прибора) и никак не помечается как ошибка — ни здесь, ни в
- * `content/buyers.ts`. Жёлтой опасной разметки на этом экране нет и быть не
- * может: этап 3 не аварийный (docs/SPEC.md §1, правило 4).
+ * ПРАВИЛЬНОГО ОТВЕТА НЕТ, и экран не делает вид, что есть. После ставки человек
+ * получает разбор последствий своего выбора, а потом общий вывод. Федя (образец
+ * 05) — единственный, у кого нет причины покупать; выбравшего его не ругают, а
+ * объясняют, почему ставка пустая (docs/SPEC.md §3.4).
  */
 export function BuyersScreen() {
-  const { next } = useStepNav();
-  const chosenId = useFunnel((s) => s.buyer);
-  const choose = useFunnel((s) => s.chooseBuyer);
-  const picked = buyers.find((b) => b.id === chosenId) ?? null;
+  const { next } = useNav();
+  const chosen = useFunnel((s) => s.buyer);
+  const chooseBuyer = useFunnel((s) => s.chooseBuyer);
+  const [placed, setPlaced] = useState(false);
 
-  return (
-    <div className="flex flex-col gap-5 px-4 pb-10 pt-2">
-      <h1 className="font-display text-display-sm uppercase leading-tight text-ink">
-        {buyersPrompt.question}
-      </h1>
-      <p className="text-ink-dim">{buyersPrompt.hint}</p>
+  const picked = buyers.find((b) => b.id === chosen) ?? null;
 
-      <ul className="flex flex-col gap-2.5">
-        {buyers.map((buyer, i) => (
-          <li key={buyer.id}>
-            <ProbeCard
-              buyer={buyer}
-              index={i}
-              total={buyers.length}
-              selected={chosenId === buyer.id}
-              onSelect={() => {
-                haptics.select();
-                choose(buyer.id);
-              }}
-            />
-          </li>
-        ))}
-      </ul>
-
-      {picked && (
-        <Surface kind="paper" as="article" className="mx-auto w-full">
-          <p className="font-display text-display-sm leading-tight text-paper-ink">
+  if (placed && picked) {
+    return (
+      <Screen className="min-h-dvh justify-between gap-8">
+        <div className="pt-8">
+          <Legend className="text-neon">СТАВКА СДЕЛАНА · ОБРАЗЕЦ {picked.code}</Legend>
+          <h1 className="mt-3 font-display text-title font-bold uppercase leading-tight">
             {picked.label}
-          </p>
-          <p className="mt-3">{picked.verdict}</p>
+          </h1>
 
-          <div className="mt-5 border-t border-line pt-4">
+          <MetalPanel className="mt-5 p-5">
+            <p className="text-base leading-relaxed text-ink">{picked.verdict}</p>
+          </MetalPanel>
+
+          <div className="mt-7 space-y-3">
             {buyersConclusion.map((line) => (
-              <p key={line} className="mt-3 first:mt-0">
+              <p key={line} className="text-base text-ink-dim">
                 {line}
               </p>
             ))}
           </div>
-        </Surface>
-      )}
+        </div>
 
-      <Button full disabled={!picked} onClick={next}>
-        {buyersPrompt.after}
+        <Button onClick={next}>{buyersPrompt.after}</Button>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen className="min-h-dvh justify-between gap-8">
+      <div className="pt-7">
+        <Legend className="text-hazard">{sampleQuery.legend}</Legend>
+
+        {/* Запрос, из которого растут все пятеро. */}
+        <MetalPanel className="mt-3 p-4">
+          <Legend>ЗАПРОС</Legend>
+          <p className="mt-1 font-mono text-base text-ink">«{sampleQuery.query}»</p>
+        </MetalPanel>
+
+        <h1 className="mt-6 font-display text-hero font-bold uppercase leading-none tracking-tight">
+          {sampleQuery.question}
+        </h1>
+
+        <div className="mt-5 grid grid-cols-2 gap-2.5">
+          {buyers.map((b) => (
+            <SampleCard
+              key={b.id}
+              buyer={b}
+              selected={chosen === b.id}
+              onSelect={() => {
+                haptics.select();
+                chooseBuyer(b.id);
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Ответ на вопрос из заголовка — после того, как карточки прочитаны. */}
+        <p className="mt-6 font-display text-hero font-bold uppercase leading-none tracking-tight text-alarm">
+          {sampleQuery.answer}
+        </p>
+        <p className="mt-2 text-base text-ink-dim">{sampleQuery.answerCaption}</p>
+
+        {/* Ставка. */}
+        <MetalPanel className="mt-7 p-5">
+          <Legend>{buyersPrompt.budgetCaption}</Legend>
+          <p className="neon-ink mt-1 font-display text-title font-bold leading-none">
+            {buyersPrompt.budget}
+          </p>
+          <p className="mt-4 font-display text-lead font-semibold uppercase leading-snug">
+            {buyersPrompt.question}
+          </p>
+          <p className="mt-2 text-small text-ink-dim">{buyersPrompt.hint}</p>
+        </MetalPanel>
+      </div>
+
+      <Button onClick={() => setPlaced(true)} disabled={!picked}>
+        {buyersPrompt.cta}
       </Button>
-    </div>
+    </Screen>
   );
 }

@@ -1,96 +1,62 @@
-import { cn } from '@/lib/cn';
 import type { Block } from '@/content/types';
 
 /**
- * Отрисовка длинного чтения — живёт на бумаге акта (`Surface kind="paper"`),
- * поэтому все цвета здесь на стороне `paper-*` (docs/SPEC.md §1.5: подложка
- * чтения держит честный контраст внутри грейда акта, посчитан в tokens.css).
+ * Отрисовка блоков длинного чтения на распечатке.
  *
- * Ритм авторского текста — короткие абзацы, часто в одно предложение
- * (docs/SPEC.md §4.3). Поэтому расстояние между абзацами здесь маленькое:
- * склеивать их нельзя, но и разгонять на полэкрана тоже — это разговор,
- * а не набор тезисов.
- *
- * Ни одной строки копирайта в этом файле нет и быть не может.
+ * Ритм авторского текста — короткие абзацы, часто в одно предложение. Каждый
+ * абзац остаётся отдельным блоком: склеивать их в плотные куски запрещено, на
+ * этом ритме держится подача (docs/SPEC.md §4.2).
  */
-
-export interface BlocksProps {
-  blocks: readonly Block[];
-  className?: string;
-}
-
-export function Blocks({ blocks, className }: BlocksProps) {
+export function Blocks({ blocks }: { blocks: readonly Block[] }) {
   return (
-    <div className={cn('flex flex-col', className)}>
-      {blocks.map((block, i) => {
-        const key = `${block.kind}-${i}`;
-
-        switch (block.kind) {
-          case 'p':
-            return (
-              <p key={key} className="mt-3 first:mt-0">
-                {block.text}
-              </p>
-            );
-
-          case 'quote':
-            // Чужой или внутренний голос — набран как вклеенная в дело
-            // заметка: легенда мира (моноширинный), не курсив тела текста.
-            return (
-              <p
-                key={key}
-                className={cn(
-                  'mt-4 first:mt-0',
-                  'border-l-2 border-line pl-4',
-                  'font-legend text-sm leading-relaxed text-paper-ink-dim',
-                )}
-              >
-                {block.text}
-              </p>
-            );
-
-          case 'lead':
-            // Утверждение, ради которого написан кусок. Одно на раздел.
-            return (
-              <p
-                key={key}
-                className={cn(
-                  'mt-6 first:mt-0',
-                  'font-display text-display-sm leading-tight text-paper-ink',
-                )}
-              >
-                {block.text}
-              </p>
-            );
-
-          case 'h':
-            return (
-              <h3
-                key={key}
-                className={cn(
-                  'mt-8 first:mt-0',
-                  'border-b border-line pb-1.5',
-                  'font-display text-lg uppercase tracking-[0.02em] leading-snug text-paper-ink',
-                )}
-              >
-                {block.text}
-              </h3>
-            );
-
-          case 'list':
-            return (
-              <ul key={key} className="mt-4 flex flex-col gap-2 first:mt-0">
-                {block.items.map((item) => (
-                  <li key={item} className="flex gap-3">
-                    {/* Жёсткая метка вместо капли — квадрат, не кружок. */}
-                    <span aria-hidden className="mt-[0.5em] h-[7px] w-[7px] shrink-0 bg-accent" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            );
-        }
-      })}
+    <div className="space-y-4">
+      {blocks.map((block, i) => (
+        <BlockView key={i} block={block} />
+      ))}
     </div>
   );
+}
+
+function BlockView({ block }: { block: Block }) {
+  switch (block.kind) {
+    case 'p':
+      return <p className="text-base leading-relaxed">{block.text}</p>;
+
+    case 'quote':
+      // Чужой или внутренний голос: отбит линейкой слева, как пометка на полях.
+      return (
+        <p className="border-l-2 border-paper-line pl-4 italic text-paper-ink-dim">
+          {block.text}
+        </p>
+      );
+
+    case 'lead':
+      // Одно крупное утверждение на раздел — то, ради чего написан кусок.
+      return (
+        <p className="font-display text-lead font-semibold uppercase leading-tight tracking-tight text-paper-ink">
+          {block.text}
+        </p>
+      );
+
+    case 'h':
+      return (
+        <h3 className="pt-2 font-display text-xl font-semibold uppercase leading-tight text-paper-ink">
+          {block.text}
+        </h3>
+      );
+
+    case 'list':
+      return (
+        <ul className="space-y-2">
+          {block.items.map((item, i) => (
+            <li key={i} className="flex gap-3">
+              <span aria-hidden="true" className="pt-1.5 text-paper-ink-dim">
+                —
+              </span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      );
+  }
 }

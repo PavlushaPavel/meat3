@@ -1,24 +1,16 @@
-import { cn } from '@/lib/cn';
 import type { ExternalAction } from '@/content/types';
 import { externalUrl } from '@/lib/env';
 import { openLink } from '@/lib/telegram';
-import { Button } from './Button';
+import { cn } from '@/lib/cn';
 
 /**
- * Кнопка на внешний ресурс: GPT-ассистенты, оплата, поддержка.
+ * Кнопка на внешний ресурс: ассистент, оплата, поддержка.
  *
- * Пока переменная сборки пуста, кнопка честно неактивна и подписана — она не
- * притворяется рабочей и не ведёт в никуда (docs/SPEC.md §3.6). Это текущее
- * состояние проекта: ассистенты и оплата появятся позже. Форма недоступной
- * кнопки (пунктирная рамка, без заливки — см. `Button.tsx`) отличает
- * состояние не только прозрачностью, это уже решено на уровне `Button`, эта
- * обёртка лишь добавляет подпись причины.
- *
- * `law` больше не принимается: вид кнопки задаёт текущий этап через
- * `ActStage`/`Button`, а не закон экрана из снесённого мира актов.
- *
- * Внутри Telegram ссылка открывается через WebApp API, вне его — обычным
- * переходом; за это отвечает обёртка `src/lib/telegram.ts`.
+ * ЧЕСТНОЕ СОСТОЯНИЕ ОБЯЗАТЕЛЬНО. Пока переменная сборки пуста, кнопка не
+ * исчезает и не ведёт в никуда — она становится неактивной с подписью, почему
+ * (docs/SPEC.md §3.7). Молча подсунуть мёртвую ссылку хуже, чем сказать, что
+ * ссылки пока нет: воронка выкладывается до того, как появятся оплата и
+ * ассистенты, и это её нормальное состояние.
  */
 export function ExternalButton({
   action,
@@ -28,21 +20,36 @@ export function ExternalButton({
   className?: string;
 }) {
   const url = externalUrl(action.envVar);
-  const ready = url.length > 0;
+
+  if (!url) {
+    return (
+      <div
+        className={cn(
+          'flex min-h-14 w-full items-center justify-between gap-3 rounded-plate border border-dashed border-line px-5 py-3',
+          className,
+        )}
+      >
+        <span className="font-display text-lg font-semibold uppercase tracking-wide text-ink-dim/60">
+          {action.label}
+        </span>
+        {action.pending && <span className="legend shrink-0 text-ink-dim/70">{action.pending}</span>}
+      </div>
+    );
+  }
 
   return (
-    <div className={cn('flex flex-col gap-2', className)}>
-      <Button full disabled={!ready} onClick={ready ? () => openLink(url) : undefined}>
-        {action.label}
-      </Button>
-
-      {!ready && action.pending.length > 0 && (
-        // Подпись объясняет, почему кнопка не нажимается: приглушать её ниже
-        // порога читаемости значит превращать честное состояние в мусор.
-        <p className="font-legend text-[11px] uppercase tracking-[0.08em] text-ink-dim">
-          {action.pending}
-        </p>
+    <button
+      type="button"
+      onClick={() => openLink(url)}
+      className={cn(
+        'flex min-h-14 w-full items-center justify-between gap-3 rounded-plate bg-hazard px-5 py-3 font-display text-lg font-semibold uppercase tracking-wide text-on-hazard shadow-[0_3px_0_var(--color-hazard-deep)] transition-transform duration-150 active:translate-y-px',
+        className,
       )}
-    </div>
+    >
+      <span className="flex-1 text-left">{action.label}</span>
+      <span aria-hidden="true" className="shrink-0 text-xl leading-none">
+        ↗
+      </span>
+    </button>
   );
 }

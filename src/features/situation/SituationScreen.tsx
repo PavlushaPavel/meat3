@@ -1,128 +1,87 @@
 import { useState } from 'react';
-import { cn } from '@/lib/cn';
-import { haptics } from '@/lib/telegram';
 import { situationOptions, situationPrompt, situationReply } from '@/content/situation';
+import { useNav } from '@/router/useNav';
 import { useFunnel } from '@/store/funnel';
-import { useStepNav } from '@/router/useStepNav';
 import { Button } from '@/ui/Button';
-import { Surface } from '@/ui/Surface';
-
-/** Жёсткая метка выбора — квадрат с впечатанной галочкой, не капля и не
- * заливка: форма меняется вместе с цветом (доступность, docs/SPEC.md
- * «Жёсткие запреты» — «не только цветом»). */
-function CheckMark({ checked }: { checked: boolean }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        'flex h-5 w-5 shrink-0 items-center justify-center border',
-        checked ? 'border-on-accent bg-on-accent/15' : 'border-line bg-transparent',
-      )}
-    >
-      {checked && (
-        <svg viewBox="0 0 12 10" className="h-3 w-3">
-          <path
-            d="M1 5L4.5 8.5L11 1"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="square"
-            strokeLinejoin="miter"
-          />
-        </svg>
-      )}
-    </span>
-  );
-}
+import { Screen } from '@/ui/CityStage';
+import { Legend } from '@/ui/Plate';
+import { haptics } from '@/lib/telegram';
+import { cn } from '@/lib/cn';
 
 /**
- * Шаг 3. Этап 2 ДИАГНОСТИКА: стоишь у панели и не знаешь, какой вентиль
- * крутить (docs/SPEC.md §1, §3.2). Множественный выбор, семь вариантов, ноль
- * обязательных, пропуск доступен всегда.
+ * Шаг 5. Множественный выбор: что похоже на твою ситуацию.
  *
- * Ответ ни на что дальше не влияет — он нужен человеку, чтобы назвать вслух
- * свою ситуацию, а не системе для сегментации. Каждый вариант — непереключённый
- * тумблер на панели: лежит плоско, с офсетной тенью прибора. Выбранный
- * впечатывается — тень уходит, карточка сдвигается на её офсет, загорается
- * галочка. Форма меняется, не только цвет.
+ * Ответ НИ НА ЧТО не влияет, и это честно: выбор нужен человеку, чтобы назвать
+ * вслух свою ситуацию, а не системе для сегментации. Ничего никуда не
+ * отправляется — бэкенда у воронки нет. Поэтому кнопка активна и при пустом
+ * выборе: обязательных полей здесь быть не может.
  */
 export function SituationScreen() {
-  const { next } = useStepNav();
+  const { next } = useNav();
   const chosen = useFunnel((s) => s.situation);
   const toggle = useFunnel((s) => s.toggleSituation);
   const [answered, setAnswered] = useState(false);
 
   if (answered) {
-    const [lead, ...rest] = situationReply.blocks;
     return (
-      <div className="flex flex-col gap-6 px-4 pb-10 pt-4">
-        <h1 className="font-display text-display-md uppercase leading-[1.02] tracking-tight text-ink">
-          {lead}
-        </h1>
-        <Surface kind="paper" className="mx-auto w-full">
-          <div className="flex flex-col gap-3">
-            {rest.map((line) => (
-              <p key={line}>{line}</p>
-            ))}
-          </div>
-        </Surface>
-        <div className="mx-auto w-full max-w-prose">
-          <Button full onClick={next}>
-            {situationReply.cta}
-          </Button>
+      <Screen className="min-h-dvh justify-between gap-8">
+        <div className="pt-10 space-y-3">
+          {situationReply.blocks.map((line) => (
+            <p key={line} className="text-lead leading-snug text-ink">
+              {line}
+            </p>
+          ))}
         </div>
-      </div>
+        <Button onClick={next}>{situationReply.cta}</Button>
+      </Screen>
     );
   }
 
   return (
-    <div className="flex flex-col gap-5 px-4 pb-10 pt-4">
-      <h1 className="font-display text-display-sm uppercase leading-[1.05] tracking-tight text-ink">
-        {situationPrompt.question}
-      </h1>
+    <Screen className="min-h-dvh justify-between gap-8">
+      <div className="pt-8">
+        <Legend>ОПРОС · НИКУДА НЕ ОТПРАВЛЯЕТСЯ</Legend>
+        <h1 className="mt-3 font-display text-title font-bold uppercase leading-tight">
+          {situationPrompt.question}
+        </h1>
+        <p className="mt-2 text-small text-ink-dim">{situationPrompt.hint}</p>
 
-      <p className="font-legend text-legend uppercase tracking-[0.1em] text-ink-dim">
-        {situationPrompt.hint}
-      </p>
-
-      <ul className="flex flex-col gap-4">
-        {situationOptions.map((option) => {
-          const isChosen = chosen.includes(option.id);
-          return (
-            <li key={option.id}>
+        <div className="mt-6 space-y-2">
+          {situationOptions.map((o) => {
+            const active = chosen.includes(o.id);
+            return (
               <button
+                key={o.id}
                 type="button"
-                aria-pressed={isChosen}
+                aria-pressed={active}
                 onClick={() => {
                   haptics.select();
-                  toggle(option.id);
+                  toggle(o.id);
                 }}
                 className={cn(
-                  'flex w-full min-h-[44px] items-center gap-3 rounded-sm border px-4 py-3.5 text-left',
-                  'font-body text-base',
-                  'transition-[transform,box-shadow,background-color,border-color] duration-150 ease-snap',
-                  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-                  isChosen
-                    ? cn(
-                        'translate-x-[6px] translate-y-[10px] border-accent bg-accent text-on-accent',
-                        'shadow-none',
-                      )
-                    : cn('border-line bg-scene-deep/10 text-ink', 'shadow-[6px_10px_0_0_var(--color-scene-deep)]'),
+                  'flex w-full items-start gap-3 rounded-plate border p-3.5 text-left transition-colors duration-150',
+                  active ? 'border-neon bg-neon/5 text-ink' : 'border-line text-ink-dim',
                 )}
               >
-                <CheckMark checked={isChosen} />
-                <span className="min-w-0">{option.text}</span>
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'mt-0.5 grid size-5 shrink-0 place-items-center border text-xs',
+                    active ? 'border-neon text-neon' : 'border-line text-transparent',
+                  )}
+                >
+                  ✕
+                </span>
+                <span className="text-base">{o.text}</span>
               </button>
-            </li>
-          );
-        })}
-      </ul>
-
-      <div className="flex flex-col gap-3 pt-2">
-        <Button full onClick={() => setAnswered(true)}>
-          {chosen.length > 0 ? situationPrompt.cta : situationPrompt.skip}
-        </Button>
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      <Button onClick={() => setAnswered(true)}>
+        {chosen.length > 0 ? situationPrompt.cta : situationPrompt.skip}
+      </Button>
+    </Screen>
   );
 }

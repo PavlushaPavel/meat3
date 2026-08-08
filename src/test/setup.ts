@@ -2,13 +2,12 @@
  * Общий setup для vitest (подключается через `test.setupFiles` в
  * vite.config.ts), выполняется один раз для каждого тестового файла.
  *
- * jsdom не реализует `window.matchMedia` (известный пробел) — его вызывает
- * `useReducedMotion()` из `src/lib/motion.ts` при монтировании любого
- * компонента, который проверяет `prefers-reduced-motion` (Stamp, ChatBubble,
- * DossierCard, VasyaScene, ChainRebuild, SlipperyOffer и т.д.). Раньше этот
- * полифилл был скопирован в каждый тестовый файл по отдельности; теперь он
- * один и подключается глобально.
+ * Здесь только ПРОБЕЛЫ СРЕДЫ — то, чего нет в jsdom, но есть в любом браузере.
+ * Обходить ими поведение прикладного кода запрещено: если тест падает из-за
+ * логики, чинится логика, а не этот файл.
  */
+
+/** jsdom не реализует `matchMedia`. Его спрашивают все проверки движения. */
 if (typeof window.matchMedia !== 'function') {
   window.matchMedia = (query: string): MediaQueryList =>
     ({
@@ -24,17 +23,17 @@ if (typeof window.matchMedia !== 'function') {
 }
 
 /**
- * jsdom не реализует `Element.prototype.scrollTo` (известный пробел, как и
- * `matchMedia` выше) — его вызывает `ChatFrame` (src/ui/chat/ChatFrame.tsx)
- * при каждом новом сообщении ленты, чтобы держать прокрутку у нижнего края.
- * Без полифилла любой тест, монтирующий `ChatFrame`/`ChatReel`/экран 0 или
- * автопродавца (экран 13, тоже на `ChatFrame`), падает с
- * `TypeError: node.scrollTo is not a function` — это ограничение среды, а
- * не баг компонента, поэтому чинится здесь же, а не обходом в прикладном
- * коде.
+ * jsdom не реализует прокрутку. `Element.prototype.scrollTo` вызывает лента
+ * чата, `window.scrollTo` — оболочка при смене шага (src/App.tsx).
  */
 if (typeof Element.prototype.scrollTo !== 'function') {
   Element.prototype.scrollTo = function scrollTo(): void {
-    // no-op — реальная прокрутка не нужна в jsdom, важно только не бросать.
+    // no-op: реальная прокрутка в jsdom не нужна, важно только не бросать.
   };
 }
+
+window.scrollTo = function scrollTo(): void {
+  // no-op по той же причине. Заменяется безусловно: в jsdom эта функция
+  // существует, но при вызове печатает «Not implemented» в stderr на каждый
+  // переход — двадцать пять строк шума за один прогон воронки.
+};

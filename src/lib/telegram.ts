@@ -87,7 +87,18 @@ export function initTelegram(): void {
     wa.ready();
     wa.expand();
     wa.disableVerticalSwipes?.();
-    const canvas = getComputedStyle(document.documentElement).getPropertyValue('--garden-ground').trim();
+    // Цвет шапки и фона клиента = фон сцены. Telegram принимает только
+    // конкретный hex, а не CSS-переменную, поэтому значение читается прямо из
+    // токенов (src/styles/tokens.css) — иначе тот же цвет пришлось бы держать
+    // вторым хардкодом и однажды разъехаться с миром.
+    //
+    // ИМЯ ТОКЕНА МЕНЯЛОСЬ. До 08.08.2026 здесь стоял `--garden-ground` из мира
+    // «Сад обратной гравитации»; он пережил ещё одну смену мира незамеченным,
+    // потому что пустое значение молча пропускается веткой `if (canvas)` —
+    // шапка просто оставалась чужого цвета, и никто этого не видел.
+    const canvas = getComputedStyle(document.documentElement)
+      .getPropertyValue('--color-scene')
+      .trim();
     if (canvas) {
       wa.setHeaderColor(canvas);
       wa.setBackgroundColor(canvas);

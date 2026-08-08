@@ -1,225 +1,283 @@
 import { useEffect, useState } from 'react';
-import type { Block } from '@/content/types';
-import { LIVES, quizFailed, quizIntro, quizPassed, quizQuestions } from '@/content/quiz';
+import {
+  LIVES,
+  quizFailed,
+  quizIntro,
+  quizPassed,
+  quizQuestions,
+  sampleRejected,
+} from '@/content/quiz';
+import { useNav } from '@/router/useNav';
 import { useFunnel } from '@/store/funnel';
-import { useStepNav } from '@/router/useStepNav';
-import { haptics } from '@/lib/telegram';
-import { Blocks } from '@/ui/Blocks';
 import { Button } from '@/ui/Button';
-import { Surface } from '@/ui/Surface';
-import { AnswerOption, type AnswerState } from './AnswerOption';
-import { Probes } from './Probes';
-import { ProbeAlarm } from './ProbeAlarm';
-
-const INTRO_FACTS_BLOCKS: Block[] = [{ kind: 'list', items: [...quizIntro.facts] }];
-
-/**
- * Экран перед первым вопросом. Показывается только пока тест не начат —
- * после `startQuiz` (первый заход) или сразу после `restartQuiz` (повтор
- * после провала) `order` уже заполнен, и интро больше не встаёт на пути:
- * возврат к тесту обязан идти прямо к вопросу, не переспрашивая заново.
- */
-function QuizIntro({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="flex flex-col items-center gap-6 px-4 pb-10 pt-6 text-center">
-      <Probes probesLeft={LIVES} size="lg" />
-      <h1 className="font-display text-display-md uppercase leading-tight text-ink">
-        {quizIntro.title}
-      </h1>
-      <p className="text-ink-dim">{quizIntro.standfirst}</p>
-      <Surface kind="paper" className="w-full text-left">
-        <Blocks blocks={INTRO_FACTS_BLOCKS} />
-      </Surface>
-      <Button full onClick={onStart}>
-        {quizIntro.cta}
-      </Button>
-    </div>
-  );
-}
+import { Screen } from '@/ui/CityStage';
+import { Lamp, MetalPanel } from '@/ui/MetalPanel';
+import { Legend, Plate } from '@/ui/Plate';
+import { haptics } from '@/lib/telegram';
+import { cn } from '@/lib/cn';
+import { Vials } from './Vials';
 
 /**
- * Шаг 10. Допуск: 12 ситуаций, 5 жизней — пять проб партии на контроле,
- * этап 5 (docs/SPEC.md §1, §3.4). Пробы — ряд предметных ячеек (`Probes`), а
- * не строчка «осталось 3». Потеря пробы — событие: над вопросом густеет
- * локальная жёлтая разметка (`ProbeAlarm`, поверх тех двух полос, что
- * `ActStage` и так держит на всём этапе 5) — партия читаемо ближе к
- * отбраковке с каждой следующей потерей (пропускается при
- * `prefers-reduced-motion`, но сама разметка всё равно стоит на нужной
- * интенсивности — воронка остаётся осмысленной и без движения).
+ * Шаг 18. КОНТРОЛЬ КАЧЕСТВА: 12 ситуаций, 5 жизней.
  *
- * Разбор (`explanation`) показывается после ЛЮБОГО ответа, включая верный —
- * без него тест превращается в угадайку. При ошибке видно, какой вариант был
- * правильным: у него собственный знак и подпись, не только цвет заливки.
- *
- * Кристалл на этом экране не растёт — провал стоит пробы, а не продукта
- * (docs/SPEC.md §1, правило 3): экран не трогает `Crystal` вовсе, он общий в
- * шапке (`App.tsx`) и весь этап 5 держит одно и то же значение.
+ * РАЗБОР ПОКАЗЫВАЕТСЯ ВСЕГДА — и после верного ответа, и после ошибки. Без него
+ * тест превращается в угадайку, а его задача не отсеять, а доучить того, кто
+ * смотрел невнимательно (docs/SPEC.md §3.6).
  */
 export function QuizScreen() {
-  const { go } = useStepNav();
+  const { goTo } = useNav();
   const lives = useFunnel((s) => s.lives);
   const order = useFunnel((s) => s.order);
   const cursor = useFunnel((s) => s.cursor);
   const startQuiz = useFunnel((s) => s.startQuiz);
   const answer = useFunnel((s) => s.answer);
+
+  const [started, setStarted] = useState(order.length > 0);
   const [picked, setPicked] = useState<string | null>(null);
-  const [flashKey, setFlashKey] = useState(0);
 
-  const started = order.length === quizQuestions.length;
-  const finished = started && (lives <= 0 || cursor >= order.length);
-
-  // Переход на развилку — побочный эффект, а не вызов во время рендера:
-  // так React не ругается на setState в чужом рендере, и переход всё равно
-  // происходит на первом же кадре, где тест закончился.
+  // Тест окончен: либо кончились жизни, либо кончились вопросы.
   useEffect(() => {
-    if (finished) go('verdict');
-  }, [finished, go]);
+    if (!started) return;
+    if (lives === 0 || cursor >= quizQuestions.length) goTo('verdict');
+  }, [started, lives, cursor, goTo]);
 
   if (!started) {
-    return <QuizIntro onStart={() => startQuiz(quizQuestions.length)} />;
+    return (
+      <Screen className="min-h-dvh justify-between gap-8">
+        <div className="pt-8">
+          <Legend className="text-hazard">{quizIntro.legend}</Legend>
+          <h1 className="mt-3 font-display text-title font-bold uppercase leading-tight">
+            {quizIntro.title}
+          </h1>
+          <p className="mt-2 text-base text-ink-dim">{quizIntro.standfirst}</p>
+
+          <MetalPanel className="mt-7 p-5">
+            <Legend className="text-center">{quizIntro.livesLabel}</Legend>
+            <Vials lives={LIVES} className="mt-4" />
+          </MetalPanel>
+
+          <ul className="mt-6 space-y-2">
+            {quizIntro.facts.map((f) => (
+              <li key={f} className="flex gap-3 text-base text-ink-dim">
+                <span aria-hidden="true" className="text-neon">
+                  ▸
+                </span>
+                {f}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <Button
+          onClick={() => {
+            startQuiz(quizQuestions.length);
+            setStarted(true);
+          }}
+        >
+          {quizIntro.cta}
+        </Button>
+      </Screen>
+    );
   }
 
-  if (finished) {
-    return null;
-  }
+  const index = order[cursor];
+  // Порядок ещё не готов (первый кадр после старта) или тест уже окончен —
+  // рисовать нечего, эффект выше уже уводит на вердикт.
+  if (index === undefined) return null;
 
-  const question = quizQuestions[order[cursor]];
-  const isAnswered = picked !== null;
-  const isCorrect = picked === question.correctId;
-
-  function handlePick(optionId: string) {
-    if (picked !== null) return;
-    setPicked(optionId);
-    if (optionId === question.correctId) {
-      haptics.success();
-    } else {
-      haptics.error();
-    }
-  }
-
-  function handleNext() {
-    const wasWrong = !isCorrect;
-    answer(isCorrect, question.topic);
-    setPicked(null);
-    if (wasWrong) setFlashKey((k) => k + 1);
-  }
+  const q = quizQuestions[index];
+  const correct = picked === q.correctId;
 
   return (
-    <div className="relative flex flex-col gap-4 px-4 pb-10 pt-2">
-      <div className="flex items-center justify-between gap-4">
-        <span className="font-legend text-legend uppercase tracking-[0.08em] text-ink-dim">
-          {cursor + 1} / {order.length}
-        </span>
-        <Probes probesLeft={lives} />
+    <Screen className="gap-6 py-7">
+      <div className="flex items-center justify-between gap-3">
+        <Legend>
+          ВОПРОС {cursor + 1} / {quizQuestions.length}
+        </Legend>
+        <Vials lives={lives} className="scale-[0.55] origin-right" />
       </div>
 
-      <ProbeAlarm probesLeft={lives} flashKey={flashKey} />
+      <MetalPanel className="p-4">
+        <Legend className="text-hazard">СИТУАЦИЯ</Legend>
+        <p className="mt-2 text-base leading-relaxed text-ink">{q.situation}</p>
+      </MetalPanel>
 
-      <p className="text-ink-dim">{question.situation}</p>
-      <h2 className="font-display text-display-sm uppercase leading-tight text-ink">
-        {question.question}
-      </h2>
+      <h1 className="font-display text-lead font-semibold uppercase leading-snug">
+        {q.question}
+      </h1>
 
-      <ul className="flex flex-col gap-2.5">
-        {question.options.map((option) => {
-          const state: AnswerState = !isAnswered
-            ? 'idle'
-            : option.id === question.correctId
-              ? 'right'
-              : option.id === picked
-                ? 'wrong'
-                : 'muted';
+      <div className="space-y-2.5">
+        {q.options.map((o) => {
+          const isPicked = picked === o.id;
+          const isAnswer = o.id === q.correctId;
+          const revealed = picked !== null;
+
           return (
-            <li key={option.id}>
-              <AnswerOption
-                text={option.text}
-                state={state}
-                disabled={isAnswered}
-                onSelect={() => handlePick(option.id)}
-              />
-            </li>
+            <button
+              key={o.id}
+              type="button"
+              disabled={revealed}
+              onClick={() => {
+                setPicked(o.id);
+                if (o.id === q.correctId) haptics.success();
+                else haptics.error();
+              }}
+              className={cn(
+                'flex w-full items-start gap-3 rounded-plate border p-3.5 text-left transition-colors duration-200',
+                !revealed && 'border-line text-ink',
+                revealed && isAnswer && 'border-neon bg-neon/10 text-ink',
+                revealed && isPicked && !isAnswer && 'border-alarm bg-alarm/10 text-ink',
+                revealed && !isPicked && !isAnswer && 'border-line text-ink-dim/60',
+              )}
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'mt-0.5 shrink-0 font-mono text-sm',
+                  revealed && isAnswer && 'text-neon',
+                  revealed && isPicked && !isAnswer && 'text-alarm',
+                  !revealed && 'text-ink-dim',
+                )}
+              >
+                {revealed ? (isAnswer ? '✓' : isPicked ? '✕' : '·') : '○'}
+              </span>
+              <span className="text-base leading-snug">{o.text}</span>
+            </button>
           );
         })}
-      </ul>
+      </div>
 
-      {isAnswered && (
+      {picked !== null && (
         <>
-          <Surface kind="paper" className="mx-auto w-full">
-            <p>{question.explanation}</p>
-          </Surface>
-          <Button full onClick={handleNext}>
+          {!correct && (
+            <Lamp tone="alarm" label={sampleRejected} />
+          )}
+
+          <MetalPanel className="p-4">
+            <Legend className={correct ? 'text-neon' : 'text-hazard'}>РАЗБОР</Legend>
+            <p className="mt-2 text-base leading-relaxed text-ink">{q.explanation}</p>
+          </MetalPanel>
+
+          <Button
+            onClick={() => {
+              answer(correct, q.topic);
+              setPicked(null);
+            }}
+          >
             Дальше
           </Button>
         </>
       )}
-    </div>
+    </Screen>
   );
 }
 
 /**
- * Шаг 11. Развилка: допуск получен или пробы кончились.
+ * Шаг 19. Вердикт контроля.
  *
- * Кристалл здесь не растёт и не появляется — это не его момент (docs/SPEC.md
- * §1, правило 3: провал стоит пробы, а не продукта; удача переходит на
- * этап 6 только на следующем шаге, `video3`). Экран не рисует свой кристалл
- * ни при удаче, ни при провале — только общий в шапке (`App.tsx`), который
- * держит значение этапа 5 до тех пор, пока человек не уйдёт дальше.
+ * Провал — не наказание, а возврат к нужному протоколу: считаем, где ошибок
+ * больше, и отправляем пересматривать именно его. Жизни возвращаются полностью.
  */
 export function VerdictScreen() {
-  const { go } = useStepNav();
+  const { next } = useNav();
   const lives = useFunnel((s) => s.lives);
-  const weakest = useFunnel((s) => s.weakestTopic)();
+  const weakestTopic = useFunnel((s) => s.weakestTopic);
   const reviewFragment = useFunnel((s) => s.reviewFragment);
   const restartQuiz = useFunnel((s) => s.restartQuiz);
+
   const passed = lives > 0;
 
+  useEffect(() => {
+    if (passed) haptics.success();
+    else haptics.error();
+  }, [passed]);
+
   if (passed) {
-    const blocks: Block[] = [
-      ...quizPassed.blocks.map((text) => ({ kind: 'p' as const, text })),
-      { kind: 'list' as const, items: [...quizPassed.list] },
-      { kind: 'p' as const, text: quizPassed.closing },
-      { kind: 'lead' as const, text: quizPassed.question },
-    ];
     return (
-      <div className="flex flex-col items-center gap-6 px-4 pb-10 pt-2 text-center">
-        {/* Момент допуска: ячейки проб держатся полным рядом и светятся. */}
-        <Probes probesLeft={lives} celebrate size="lg" />
-        <h1 className="font-display text-display-lg uppercase leading-none text-ink">
-          {quizPassed.title}
-        </h1>
-        <Surface kind="paper" className="mx-auto w-full text-left">
-          <Blocks blocks={blocks} />
-        </Surface>
-        <Button full onClick={() => go('video3')}>
-          {quizPassed.cta}
-        </Button>
-      </div>
+      <Screen className="min-h-dvh justify-between gap-8">
+        <div className="pt-10">
+          <Lamp tone="ok" label={quizPassed.status} />
+
+          <h1 className="neon-ink mt-4 font-display text-hero font-bold uppercase leading-none tracking-tight">
+            {quizPassed.title}
+          </h1>
+
+          <div className="mt-6 space-y-2">
+            {quizPassed.blocks.map((line) => (
+              <p key={line} className="text-base text-ink-dim">
+                {line}
+              </p>
+            ))}
+          </div>
+
+          <ul className="mt-4 space-y-2">
+            {quizPassed.list.map((item) => (
+              <li key={item} className="flex gap-3 text-base text-ink">
+                <span aria-hidden="true" className="text-neon">
+                  ▸
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-6 text-base text-ink-dim">{quizPassed.closing}</p>
+          <p className="mt-2 font-display text-lead font-semibold uppercase leading-snug">
+            {quizPassed.question}
+          </p>
+        </div>
+
+        <Button onClick={next}>{quizPassed.cta}</Button>
+      </Screen>
     );
   }
 
-  const failedBlocks: Block[] = [
-    ...quizFailed.blocks.map((text) => ({ kind: 'p' as const, text })),
-    { kind: 'lead' as const, text: quizFailed.diagnosis[weakest] },
-  ];
+  const topic = weakestTopic();
 
   return (
-    <div className="flex flex-col items-center gap-6 px-4 pb-10 pt-2 text-center">
-      {/* Ряд пуст: все пять проб уже потеряны — это финальная точка, не тихая цифра. */}
-      <Probes probesLeft={0} size="lg" />
-      <h1 className="font-display text-display-md uppercase leading-tight text-ink">
-        {quizFailed.title}
-      </h1>
-      <Surface kind="paper" className="mx-auto w-full text-left">
-        <Blocks blocks={failedBlocks} />
-      </Surface>
-      <div className="flex w-full flex-col gap-3">
-        <Button full onClick={() => reviewFragment(weakest)}>
-          {quizFailed.actions[weakest]}
-        </Button>
-        <Button tone="quiet" full onClick={() => restartQuiz(quizQuestions.length)}>
+    <Screen className="min-h-dvh justify-between gap-8">
+      <div className="pt-8">
+        <Plate className="w-full">
+          <p className="text-center font-display text-xl font-bold uppercase leading-tight">
+            {quizFailed.status}
+          </p>
+        </Plate>
+
+        <h1 className="mt-6 font-display text-title font-bold uppercase leading-tight">
+          {quizFailed.title}
+        </h1>
+
+        <div className="mt-5 space-y-3">
+          {quizFailed.blocks.map((line) => (
+            <p key={line} className="text-base text-ink-dim">
+              {line}
+            </p>
+          ))}
+        </div>
+
+        <MetalPanel className="mt-7 p-4">
+          <Legend className="text-hazard">ДИАГНОСТИКА</Legend>
+          <p className="mt-2 text-base text-ink">{quizFailed.diagnosis[topic]}</p>
+          <p className="mt-3 text-small text-ink-dim">{quizFailed.restored}</p>
+        </MetalPanel>
+      </div>
+
+      <div className="space-y-2.5">
+        <Button onClick={() => reviewFragment(topic)}>{quizFailed.actions[topic]}</Button>
+        {/*
+          Именно `restartQuiz`, а не переход на шаг теста: жизни сейчас на нуле,
+          и простой `goTo('quiz')` мгновенно отбросил бы человека обратно на этот
+          же экран вердикта. Перезапуск возвращает пять жизней и перемешивает
+          вопросы.
+        */}
+        <Button
+          variant="ghost"
+          arrow={false}
+          onClick={() => restartQuiz(quizQuestions.length)}
+        >
           {quizFailed.retry}
         </Button>
       </div>
-    </div>
+    </Screen>
   );
 }

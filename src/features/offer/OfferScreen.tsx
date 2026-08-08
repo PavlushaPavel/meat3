@@ -1,104 +1,98 @@
-import { useState } from 'react';
-import type { Block } from '@/content/types';
 import { checkout, finalThought, offer, support } from '@/content/offer';
-import { cn } from '@/lib/cn';
-import { Blocks } from '@/ui/Blocks';
-import { Button } from '@/ui/Button';
+import { Screen } from '@/ui/CityStage';
 import { ExternalButton } from '@/ui/ExternalButton';
-import { Surface } from '@/ui/Surface';
-import { useFunnel } from '@/store/funnel';
+import { MetalPanel } from '@/ui/MetalPanel';
+import { Legend, Plate } from '@/ui/Plate';
 
 /**
- * Шаг 14. Оффер и финальная мысль. Этап 6 ЧИСТЫЙ ПРОДУКТ — кристалл вырос,
- * чистота на максимуме, ровный синий свет продукта (docs/SPEC.md §1,
- * таблица этапов).
+ * Шаг 25. Продажа и финальная мысль. Последний экран воронки.
  *
- * Единственный коммерческий экран воронки и единственная подтверждённая
- * цифра — 3 990 ₽ (docs/SPEC.md §4, правило 4). Цена вынесена из бумаги
- * этапа в собственную рамку со свечением акцента — она обязана читаться как
- * событие экрана, не как строка в карточке. Показатель чистоты рядом с ней
- * намеренно не стоит: цифры чистоты — состояние партии внутри метафоры, а не
- * обещание результата, и рядом с ценой их не ставят (docs/SPEC.md §4,
- * правило 9). Пока ссылки оплаты нет, кнопка честно неактивна и подписана:
- * она не ведёт в никуда и не притворяется рабочей (docs/SPEC.md §3.6).
+ * ЧТО ПРОДАЁМ. Не доступ в лабораторию — человек уже прошёл её насквозь
+ * бесплатно. Продаём собственную сборочную линию: там показали, здесь ставишь
+ * у себя (docs/SPEC.md §4 правило 7).
  *
- * Финальная мысль вынесена на отдельный шаг чтения, а не свалена под ценой:
- * она закрывает круг с первым экраном, и продавать в этот момент уже поздно.
+ * Единственная цифра на экране — 3 990 ₽. Ни отзывов, ни количества учеников,
+ * ни обещаний результата: подтверждать их нечем (PRODUCT.md, Evidence on Hand).
  */
 export function OfferScreen() {
-  const [showFinal, setShowFinal] = useState(false);
-  const reset = useFunnel((s) => s.reset);
+  return (
+    <Screen className="gap-7 py-8">
+      <div>
+        <Legend className="text-hazard">{offer.legend}</Legend>
 
-  if (showFinal) {
-    const finalBlocks: Block[] = [
-      ...finalThought.blocks.map((text) => ({ kind: 'p' as const, text })),
-      { kind: 'list' as const, items: [...finalThought.questions] },
-      ...finalThought.after.map((text) => ({ kind: 'p' as const, text })),
-      { kind: 'lead' as const, text: finalThought.closing },
-    ];
+        <Plate className="mt-3 w-full">
+          <h1 className="text-center font-display text-3xl font-bold uppercase leading-none tracking-tight">
+            {offer.title}
+          </h1>
+        </Plate>
 
-    return (
-      <div className="flex flex-col gap-6 px-4 pb-12 pt-2">
-        <h1 className="font-display text-display-md uppercase leading-tight text-ink">
-          {finalThought.title}
-        </h1>
+        <p className="mt-5 text-lead leading-snug text-ink">{offer.standfirst}</p>
 
-        <Surface kind="paper" as="article" className="mx-auto w-full">
-          <Blocks blocks={finalBlocks} />
-        </Surface>
-
-        <div className="mx-auto flex w-full max-w-prose flex-col gap-3">
-          <ExternalButton action={checkout} />
-          <ExternalButton action={support} />
-          <button
-            type="button"
-            onClick={reset}
-            className="self-start font-legend text-legend uppercase tracking-[0.08em] text-ink-dim underline underline-offset-4"
-          >
-            Пройти заново
-          </button>
+        <div className="mt-4 space-y-2">
+          {offer.blocks.map((line) => (
+            <p key={line} className="text-base text-ink-dim">
+              {line}
+            </p>
+          ))}
         </div>
       </div>
-    );
-  }
 
-  const offerBlocks: Block[] = [
-    { kind: 'p', text: offer.standfirst },
-    ...offer.not.map((text) => ({ kind: 'p' as const, text })),
-    { kind: 'p', text: offer.but },
-  ];
+      <MetalPanel rivets className="p-5">
+        <div className="space-y-2">
+          {offer.not.map((line) => (
+            <p key={line} className="text-small text-ink-dim">
+              {line}
+            </p>
+          ))}
+        </div>
+        <p className="mt-3 text-base text-ink">{offer.but}</p>
 
-  return (
-    <div className="flex flex-col gap-6 px-4 pb-12 pt-2">
-      <h1 className="font-display text-display-lg uppercase leading-none text-ink">
-        {offer.title}
-      </h1>
+        <p className="neon-ink mt-6 font-display text-hero font-bold leading-none tracking-tight">
+          {offer.price}
+        </p>
 
-      <Surface kind="paper" as="article" className="mx-auto w-full">
-        <Blocks blocks={offerBlocks} />
-      </Surface>
+        <ExternalButton action={checkout} className="mt-5" />
+      </MetalPanel>
 
-      {/* Единственная коммерческая цифра всей воронки — собственная рамка,
-          не строка внутри бумаги: цена обязана читаться как событие экрана. */}
-      <div
-        className={cn(
-          'mx-auto flex w-full max-w-prose flex-col items-center gap-2',
-          'rounded-sm border-2 border-accent bg-scene-deep/60 px-6 py-8 text-center',
-          'shadow-glow-accent',
-        )}
-      >
-        {/* Ревью прочитало висевший здесь оранжевый квадрат как случайный
-            глиф: он ни к чему не относился и читался как мусор над цифрой.
-            Цене не нужна подпорка — она и есть событие экрана. */}
-        <p className="font-display text-display-xl leading-none text-accent">{offer.price}</p>
+      {/* Финальная мысль: круг с первым экраном замыкается. */}
+      <div className="border-t border-line pt-7">
+        <h2 className="font-display text-title font-bold uppercase leading-tight">
+          {finalThought.title}
+        </h2>
+
+        <div className="mt-4 space-y-2">
+          {finalThought.blocks.map((line) => (
+            <p key={line} className="text-base text-ink-dim">
+              {line}
+            </p>
+          ))}
+        </div>
+
+        <ul className="mt-3 space-y-2">
+          {finalThought.questions.map((q) => (
+            <li key={q} className="flex gap-3 text-base text-ink">
+              <span aria-hidden="true" className="text-neon">
+                ▸
+              </span>
+              {q}
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-5 space-y-2">
+          {finalThought.after.map((line) => (
+            <p key={line} className="text-base text-ink-dim">
+              {line}
+            </p>
+          ))}
+        </div>
+
+        <p className="mt-5 font-display text-lead font-semibold uppercase leading-snug text-ink">
+          {finalThought.closing}
+        </p>
       </div>
 
-      <div className="mx-auto flex w-full max-w-prose flex-col gap-4">
-        <ExternalButton action={checkout} />
-        <Button tone="quiet" full onClick={() => setShowFinal(true)}>
-          Что изменилось за эту воронку
-        </Button>
-      </div>
-    </div>
+      <ExternalButton action={support} />
+    </Screen>
   );
 }
