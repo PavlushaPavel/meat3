@@ -109,7 +109,7 @@ export function CityStage({
       <div className="stage-light" aria-hidden="true" />
       <div className="stage-grain" aria-hidden="true" />
       <div className="stage-vignette" aria-hidden="true" />
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence initial={false}>
         <motion.main
           key={step}
           className="relative z-10"
