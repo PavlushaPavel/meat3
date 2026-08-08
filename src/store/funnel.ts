@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { LIVES } from '../content/quiz';
+import { QUESTIONS_PER_RUN } from '../content/quizBanks';
 import type { QuizTopic } from '../content/types';
 import { REVIEW_TARGET, STEPS, type StepKey } from '../router/flow';
 import type { DistrictId } from '../world';
@@ -51,14 +52,14 @@ interface FunnelState {
   toggleSituation: (id: string) => void;
   chooseBuyer: (id: string) => void;
 
-  startQuiz: (questionCount: number) => void;
+  startQuiz: () => void;
   answer: (correct: boolean, topic: QuizTopic) => void;
   /** Тема, в которой человек ошибался больше. При равенстве — `audience`. */
   weakestTopic: () => QuizTopic;
   /** Уйти пересматривать протокол: запоминает, что вернуться надо в тест. */
   reviewFragment: (topic: QuizTopic) => void;
   /** Вернуться в тест с полными образцами и перемешанными вопросами. */
-  restartQuiz: (questionCount: number) => void;
+  restartQuiz: () => void;
   reset: () => void;
 }
 
@@ -106,10 +107,10 @@ export const useFunnel = create<FunnelState>()(
 
       chooseBuyer: (id) => set({ buyer: id }),
 
-      startQuiz: (questionCount) =>
+      startQuiz: () =>
         set({
           lives: LIVES,
-          order: shuffled(questionCount),
+          order: shuffled(QUESTIONS_PER_RUN),
           cursor: 0,
           mistakes: { audience: 0, offer: 0 },
         }),
@@ -130,12 +131,12 @@ export const useFunnel = create<FunnelState>()(
 
       reviewFragment: (topic) => set({ step: REVIEW_TARGET[topic], returnTo: 'quiz' }),
 
-      restartQuiz: (questionCount) =>
+      restartQuiz: () =>
         set({
           step: 'quiz',
           returnTo: null,
           lives: LIVES,
-          order: shuffled(questionCount),
+          order: shuffled(QUESTIONS_PER_RUN),
           cursor: 0,
           mistakes: { audience: 0, offer: 0 },
         }),

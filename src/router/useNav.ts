@@ -1,4 +1,3 @@
-import { quizQuestions } from '@/content/quiz';
 import { useFunnel } from '@/store/funnel';
 import { nextStep, type StepKey } from './flow';
 
@@ -33,7 +32,7 @@ export function useNav(): {
     next: () => {
       if (reviewing) {
         // Пересмотр окончен: тест начинается заново, с полными жизнями.
-        restartQuiz(quizQuestions.length);
+        restartQuiz();
         return;
       }
       const n = nextStep(step);

@@ -3,9 +3,10 @@ import {
   quizFailed,
   quizIntro,
   quizPassed,
-  quizQuestions,
   sampleRejected,
 } from '@/content/quiz';
+import { quizBank } from '@/content/quizBanks';
+import { FALLBACK_DISTRICT, districtById } from '@/world';
 import { useNav } from '@/router/useNav';
 import { useFunnel } from '@/store/funnel';
 import { Button } from '@/ui/Button';
@@ -25,6 +26,11 @@ import { Vials } from './Vials';
  */
 export function QuizScreen() {
   const { goTo } = useNav();
+  const districtId = useFunnel((s) => s.district);
+  const district = districtId ? districtById(districtId) : FALLBACK_DISTRICT;
+  // Банк вопросов принадлежит району: у директолога быстрые ссылки, у
+  // авитолога позиции, у таргетолога CPL (src/content/quizBanks.ts).
+  const questions = quizBank(district.id);
   const lives = useFunnel((s) => s.lives);
   const order = useFunnel((s) => s.order);
   const cursor = useFunnel((s) => s.cursor);
@@ -37,8 +43,8 @@ export function QuizScreen() {
   // Тест окончен: либо кончились жизни, либо кончились вопросы.
   useEffect(() => {
     if (!started) return;
-    if (lives === 0 || cursor >= quizQuestions.length) goTo('verdict');
-  }, [started, lives, cursor, goTo]);
+    if (lives === 0 || cursor >= questions.length) goTo('verdict');
+  }, [started, lives, cursor, questions.length, goTo]);
 
   if (!started) {
     return (
@@ -78,7 +84,7 @@ export function QuizScreen() {
 
         <Button
           onClick={() => {
-            startQuiz(quizQuestions.length);
+            startQuiz();
             setStarted(true);
           }}
         >
@@ -93,14 +99,14 @@ export function QuizScreen() {
   // рисовать нечего, эффект выше уже уводит на вердикт.
   if (index === undefined) return null;
 
-  const q = quizQuestions[index];
+  const q = questions[index];
   const correct = picked === q.correctId;
 
   return (
     <Screen className="gap-6 py-7">
       <div className="flex items-center justify-between gap-3">
         <Legend>
-          ВОПРОС {cursor + 1} / {quizQuestions.length}
+          ВОПРОС {cursor + 1} / {questions.length}
         </Legend>
         <Vials lives={lives} className="scale-[0.55] origin-right" />
       </div>
@@ -281,7 +287,7 @@ export function VerdictScreen() {
         <Button
           variant="ghost"
           arrow={false}
-          onClick={() => restartQuiz(quizQuestions.length)}
+          onClick={() => restartQuiz()}
         >
           {quizFailed.retry}
         </Button>

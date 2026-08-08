@@ -1,15 +1,18 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '@/App';
-import { buyers, buyersPrompt, sampleQuery } from '@/content/buyers';
+import { buyers } from '@/content/buyers';
 import { blameStamp, chatSkip } from '@/content/chat';
 import { DISTRICT_COPY, districtCopy } from '@/content/districts';
 import { homeDistrict } from '@/content/town';
 import { DISTRICTS, type DistrictId } from '@/world';
-import { barrier, labEntry, wallAudience, assemblyLine } from '@/content/lab';
+import { barrier, labEntry, assemblyLine } from '@/content/lab';
+import { EXPERIMENT1, epiphany, experiment2Choice, formulas, moneyBridge, toolGranted } from '@/content/experiments';
+import { catharsisIntro, catharsisLabels } from '@/content/finale';
+import { QUESTIONS_PER_RUN, quizBank } from '@/content/quizBanks';
 import { longread1, longread2, longread3, longread4 } from '@/content/longreads';
 import { checkout, offer } from '@/content/offer';
-import { quizIntro, quizPassed, quizQuestions } from '@/content/quiz';
+import { quizIntro, quizPassed } from '@/content/quiz';
 import { situationPrompt, situationReply } from '@/content/situation';
 import { cityExit, districtChoice, map1, map2, mapFinal, townIntro, zoomOut } from '@/content/town';
 import { video1, video1Outro, video2, videoEmptyLabel } from '@/content/videos';
@@ -92,31 +95,49 @@ describe('воронка при пустом окружении', () => {
     press(video1.next);
 
     // Образцы: поставить бюджет на одного и прочитать разбор.
-    expect(screen.getByText(sampleQuery.answer)).toBeDefined();
+    // Интерактив Директа: под чью ситуацию строим гипотезу.
+    const first = EXPERIMENT1.direct;
+    if (first.kind !== 'segments') throw new Error('у Директа должен быть выбор сегмента');
     fireEvent.click(screen.getByRole('button', { name: new RegExp(buyers[0].label) }));
-    press(buyersPrompt.cta);
+    press(first.cta);
     expect(screen.getByText(buyers[0].verdict)).toBeDefined();
-    press(buyersPrompt.after);
+    press(first.next);
 
     press(video1Outro.next);
 
-    // Стена: правило перечёркнуто, инструмент 01 лежит рядом неактивным.
-    expect(screen.getByText(wallAudience.after)).toBeDefined();
-    press(wallAudience.cta);
+    // Вывод эксперимента и выдача инструмента.
+    expect(screen.getByText(epiphany.lead)).toBeDefined();
+    press(epiphany.cta);
+    expect(screen.getByText(toolGranted.status)).toBeDefined();
+    press(toolGranted.next);
 
     press(map1.cta);
     press(longread2.next);
     press(video2.next);
+
+    // Правильный человек + неправильное сообщение = отказ.
+    const right = experiment2Choice.options.find((o) => o.right)!;
+    fireEvent.click(screen.getByText(`«${right.text}»`));
+    expect(screen.getByText(experiment2Choice.formula.result)).toBeDefined();
+    press(experiment2Choice.cta);
+
+    press(formulas.next);
+
+    // Денежный мост.
+    expect(screen.getByText(moneyBridge.title)).toBeDefined();
+    press(moneyBridge.cta);
+
     press(map2.cta);
 
     // --- Акт III. Допуск и сборка ---
     expect(screen.getByText(barrier.status)).toBeDefined();
     press(barrier.cta);
 
-    // Контроль качества: отвечаем верно на все двенадцать.
+    // Контроль качества: отвечаем верно на все восемь.
     press(quizIntro.cta);
-    for (let i = 0; i < quizQuestions.length; i += 1) {
-      const q = quizQuestions.find((candidate) => screen.queryByText(candidate.situation));
+    const bank = quizBank('direct');
+    for (let i = 0; i < bank.length; i += 1) {
+      const q = bank.find((candidate) => screen.queryByText(candidate.situation));
       expect(q, `на экране нет ни одного известного вопроса, шаг ${i + 1}`).toBeDefined();
 
       const right = q!.options.find((o) => o.id === q!.correctId)!;
@@ -130,6 +151,11 @@ describe('воронка при пустом окружении', () => {
     press(longread3.next);
     expect(screen.getByText(assemblyLine.assembled)).toBeDefined();
     press(assemblyLine.cta);
+
+    // Персональный финал: общий вход, дальше язык района.
+    expect(screen.getByText(catharsisIntro.lead)).toBeDefined();
+    expect(screen.getByText(DISTRICT_COPY.direct.catharsis.opening)).toBeDefined();
+    press(catharsisLabels.cta);
 
     // Финальная карта: зона влияния обведена, отдел продаж остался снаружи.
     expect(screen.getByText('ТВОЯ ЗОНА ВЛИЯНИЯ')).toBeDefined();
@@ -146,7 +172,7 @@ describe('воронка при пустом окружении', () => {
   });
 
   it('оплата без ссылки не ведёт в никуда, а честно говорит, что её нет', () => {
-    useFunnel.setState({ step: 'offer' });
+    useFunnel.setState({ step: 'offer', district: 'direct' });
     render(<App />);
 
     expect(screen.getByText(checkout.pending)).toBeDefined();
@@ -157,14 +183,15 @@ describe('воронка при пустом окружении', () => {
 
 describe('провал контроля качества', () => {
   it('уводит на пересмотр протокола и возвращает в тест с полными жизнями', () => {
-    useFunnel.setState({ step: 'quiz' });
+    useFunnel.setState({ step: 'quiz', district: 'direct' });
     render(<App />);
 
     press(quizIntro.cta);
 
     // Отвечаем неверно, пока не кончатся все пять жизней.
+    const bank = quizBank('direct');
     for (let i = 0; i < 5; i += 1) {
-      const q = quizQuestions.find((candidate) => screen.queryByText(candidate.situation));
+      const q = bank.find((candidate) => screen.queryByText(candidate.situation));
       const wrong = q!.options.find((o) => o.id !== q!.correctId)!;
       fireEvent.click(screen.getByRole('button', { name: wrong.text }));
       press('Дальше');
@@ -237,11 +264,63 @@ describe('персонализация по районам', () => {
   );
 });
 
+describe('три разных интерактива', () => {
+  /**
+   * Самый рискованный кусок персонализации: у Авито это отдельная ветка
+   * компонента (выбор первого экрана карточки), а не тот же экран с другим
+   * текстом. Ошибка здесь не видна ни типам, ни сборке — просто директолог
+   * увидит вопрос авитолога.
+   */
+  it.each(DISTRICTS.map((d) => d.id))('район %s получает свой вопрос', (id: DistrictId) => {
+    useFunnel.setState({ step: 'buyers', district: id });
+    render(<App />);
+
+    const interactive = EXPERIMENT1[id];
+    expect(screen.getByText(interactive.question)).toBeDefined();
+
+    if (interactive.kind === 'listing') {
+      // У Авито на экране карточка и три варианта первого экрана, а не люди.
+      expect(screen.getByText(interactive.current)).toBeDefined();
+      for (const o of interactive.options) {
+        expect(screen.getByText(o.title)).toBeDefined();
+      }
+    } else {
+      // У Директа и VK на экране пять образцов.
+      for (const b of buyers) {
+        expect(screen.getByRole('button', { name: new RegExp(b.label) })).toBeDefined();
+      }
+    }
+
+    // И чужого вопроса на экране нет.
+    for (const other of DISTRICTS.filter((d) => d.id !== id)) {
+      const alien = EXPERIMENT1[other.id];
+      if (alien.question !== interactive.question) {
+        expect(screen.queryByText(alien.question)).toBeNull();
+      }
+    }
+  });
+
+  it('у каждого района свой банк из восьми вопросов', () => {
+    for (const d of DISTRICTS) {
+      const bank = quizBank(d.id);
+      expect(bank.length, `банк района ${d.id}`).toBe(QUESTIONS_PER_RUN);
+      // Верный ответ обязан существовать среди вариантов, иначе тест не пройти.
+      for (const q of bank) {
+        expect(q.options.some((o) => o.id === q.correctId), q.id).toBe(true);
+      }
+    }
+
+    // Банки не совпадают между собой.
+    const ids = DISTRICTS.map((d) => quizBank(d.id).map((q) => q.id).join());
+    expect(new Set(ids).size).toBe(DISTRICTS.length);
+  });
+});
+
 describe('честные заглушки', () => {
   it('во всех трёх протоколах слот записи сообщает, что материала нет', () => {
     for (const step of ['video1', 'video2', 'video3'] as const) {
       cleanup();
-      useFunnel.setState({ step });
+      useFunnel.setState({ step, district: 'direct' });
       const view = render(<App />);
       expect(within(view.container).getByText(videoEmptyLabel)).toBeDefined();
     }

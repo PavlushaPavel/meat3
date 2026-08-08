@@ -17,7 +17,14 @@ import { ChatScreen } from '@/features/chat/ChatScreen';
 import { LongreadScreen } from '@/features/longread/LongreadScreen';
 import { SituationScreen } from '@/features/situation/SituationScreen';
 import { LabScreen } from '@/features/lab/LabScreen';
-import { WallScreen } from '@/features/lab/WallScreen';
+import {
+  EpiphanyScreen,
+  FormulasScreen,
+  MessageScreen,
+  MoneyScreen,
+  ToolScreen,
+} from '@/features/lab/LabExtras';
+import { CatharsisScreen } from '@/features/town/CatharsisScreen';
 import { BarrierScreen } from '@/features/lab/BarrierScreen';
 import { BuyersScreen } from '@/features/buyers/BuyersScreen';
 import {
@@ -54,10 +61,14 @@ export const SCREENS: Record<StepKey, () => ReactElement> = {
   video1: () => <Video1Screen />,
   buyers: () => <BuyersScreen />,
   video1end: () => <Video1EndScreen />,
-  wall1: () => <WallScreen />,
+  epiphany: () => <EpiphanyScreen />,
+  tool1: () => <ToolScreen />,
   map1: () => <Map1Screen />,
   long2: () => <LongreadScreen content={longread2} />,
   video2: () => <Video2Screen />,
+  message: () => <MessageScreen />,
+  formulas: () => <FormulasScreen />,
+  money: () => <MoneyScreen />,
   map2: () => <Map2Screen />,
 
   // Акт III. Допуск и сборка.
@@ -66,6 +77,7 @@ export const SCREENS: Record<StepKey, () => ReactElement> = {
   verdict: () => <VerdictScreen />,
   long3: () => <LongreadScreen content={longread3} />,
   video3: () => <Video3Screen />,
+  catharsis: () => <CatharsisScreen />,
   mapfinal: () => <MapFinalScreen />,
   exit: () => <ExitScreen />,
   long4: () => <LongreadScreen content={longread4} />,

@@ -20,11 +20,12 @@ export const videoEmptyLabel = 'Материал пока не подключё�
 
 /** Шаг 9. Протокол 01, до врезки с образцами. */
 export const video1: VideoContent = {
-  protocol: 'ПРОТОКОЛ 01',
-  title: 'Кому мы вообще продаём?',
-  standfirst: 'И зачем человек вообще покупает.',
+  protocol: 'ЭКСПЕРИМЕНТ 01',
+  title: 'Почему целевой клик ещё не означает покупателя',
+  // Подзаголовок подставляется из района: у Авито это не клик, а просмотр.
+  standfirst: '',
   envVar: 'VITE_VIDEO_1_URL',
-  next: 'Разобрать на образцах',
+  next: 'Разобрать на примере',
   blocks: [
     {
       kind: 'p',
@@ -68,7 +69,7 @@ export const video1: VideoContent = {
 /** Шаг 11. Финал протокола 01 — после ставки на образец. */
 export const video1Outro: { title: string; next: string; blocks: Block[] } = {
   title: 'Что сейчас изменилось',
-  next: 'К стене',
+  next: 'Дальше',
   blocks: [
     { kind: 'p', text: 'Вот здесь начинает ломаться старая картина мира.' },
     { kind: 'p', text: 'Раньше ты видел запрос.' },
@@ -108,8 +109,8 @@ export const video1Outro: { title: string; next: string; blocks: Block[] } = {
 
 /** Шаг 15. Протокол 02. */
 export const video2: VideoContent = {
-  protocol: 'ПРОТОКОЛ 02',
-  title: 'Синтез предложения',
+  protocol: 'ЭКСПЕРИМЕНТ 02',
+  title: 'Как ты сам мешаешь клику превратиться в заявку',
   standfirst: 'Как перевести понимание человека в рекламное сообщение.',
   envVar: 'VITE_VIDEO_2_URL',
   next: 'Дальше',
@@ -161,7 +162,7 @@ export const video2: VideoContent = {
 
 /** Шаг 21. Протокол 03. Здесь лаборатория становится сборочным цехом. */
 export const video3: VideoContent = {
-  protocol: 'ПРОТОКОЛ 03',
+  protocol: 'ЭКСПЕРИМЕНТ 03',
   title: 'Лендос за вечер',
   standfirst: 'Что человек видит после клика — и что с этим делать.',
   envVar: 'VITE_VIDEO_3_URL',

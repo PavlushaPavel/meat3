@@ -138,7 +138,7 @@ export const ZONES: Record<ZoneId, Zone> = {
   },
   landing: {
     id: 'landing',
-    name: 'LANDING STREET',
+    name: 'CONVERSION STREET',
     caption: 'Куда он попадёт после клика',
     inChain: true,
   },
@@ -179,7 +179,7 @@ const ZONE_SCHEDULE: Record<ZoneId, { shapeAt: StepKey | null; knownAt: StepKey 
   district: { shapeAt: 'town', knownAt: 'district', openAt: 'district' },
 
   // Отдаление карты: контуры без имён. Человек узнаёт, что город больше.
-  audience: { shapeAt: 'zoomout', knownAt: 'wall1', openAt: 'map1' },
+  audience: { shapeAt: 'zoomout', knownAt: 'epiphany', openAt: 'map1' },
   offerMarket: { shapeAt: 'zoomout', knownAt: 'map1', openAt: 'map2' },
   landing: { shapeAt: 'zoomout', knownAt: 'long3', openAt: 'mapfinal' },
   leadGate: { shapeAt: 'zoomout', knownAt: 'long3', openAt: 'mapfinal' },
