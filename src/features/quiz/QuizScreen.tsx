@@ -10,7 +10,7 @@ import {
 import { useNav } from '@/router/useNav';
 import { useFunnel } from '@/store/funnel';
 import { Button } from '@/ui/Button';
-import { Screen } from '@/ui/CityStage';
+import { ScenePanel, Screen } from '@/ui/CityStage';
 import { Lamp, MetalPanel } from '@/ui/MetalPanel';
 import { Legend, Plate } from '@/ui/Plate';
 import { haptics } from '@/lib/telegram';
@@ -51,10 +51,19 @@ export function QuizScreen() {
           </h1>
           <p className="mt-2 text-base text-ink-dim">{quizIntro.standfirst}</p>
 
-          <MetalPanel className="mt-7 p-5">
-            <Legend className="text-center">{quizIntro.livesLabel}</Legend>
-            <Vials lives={LIVES} className="mt-4" />
-          </MetalPanel>
+          <ScenePanel
+            asset="quality-control-rack.webp"
+            alt="Стойка контроля качества с пятью сохранёнными жизнями"
+            className="mt-7 aspect-[4/5]"
+            imageClassName="object-[50%_56%]"
+          >
+            <div className="flex h-full items-end p-3">
+              <div className="w-full border border-line bg-scene-deep/90 px-4 py-3 text-center backdrop-blur-[2px]">
+                <Legend>{quizIntro.livesLabel}</Legend>
+                <p className="neon-ink mt-1 font-display text-title font-bold leading-none">5 / 5</p>
+              </div>
+            </div>
+          </ScenePanel>
 
           <ul className="mt-6 space-y-2">
             {quizIntro.facts.map((f) => (

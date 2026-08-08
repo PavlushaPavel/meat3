@@ -43,7 +43,7 @@ export function DistrictScreen() {
         </h1>
         <p className="mt-2 text-small text-ink-dim">{districtChoice.hint}</p>
 
-        <div className="mt-7 space-y-3">
+        <div className="mt-7 space-y-3" role="radiogroup" aria-label={districtChoice.title}>
           {DISTRICTS.map((d) => {
             const active = chosen === d.id;
             return (
@@ -53,21 +53,33 @@ export function DistrictScreen() {
                 onClick={() => pick(d.id)}
                 aria-pressed={active}
                 className={cn(
-                  'block w-full rounded-panel border p-4 text-left transition-colors duration-200',
+                  'group grid min-h-20 w-full grid-cols-[3.25rem_1fr_auto] items-center gap-3 overflow-hidden rounded-panel border p-3 text-left transition-[border-color,background-color,transform] duration-200 active:translate-y-px',
                   active
-                    ? 'neon-edge border-neon bg-neon/5'
-                    : 'border-line bg-scene-deep/60 hover:border-ink-dim',
+                    ? 'neon-edge border-neon bg-scene-deep/90'
+                    : 'border-line bg-scene-deep/75 hover:border-ink-dim',
                 )}
               >
-                <p
+                <DistrictMark id={d.id} />
+                <span className="min-w-0">
+                  <span
+                    className={cn(
+                      'block font-display text-xl font-semibold uppercase tracking-wide',
+                      active ? 'neon-ink' : 'text-ink',
+                    )}
+                  >
+                    {d.name}
+                  </span>
+                  <span className="legend mt-1 block text-ink-dim">{d.source}</span>
+                </span>
+                <span
+                  aria-hidden="true"
                   className={cn(
-                    'font-display text-xl font-semibold uppercase tracking-wide',
-                    active ? 'neon-ink' : 'text-ink',
+                    'font-mono text-xl transition-transform duration-200 group-hover:translate-x-0.5',
+                    active ? 'text-neon' : 'text-line',
                   )}
                 >
-                  {d.name}
-                </p>
-                <p className="legend mt-1 text-ink-dim">{d.source}</p>
+                  →
+                </span>
               </button>
             );
           })}
@@ -78,6 +90,34 @@ export function DistrictScreen() {
         {chosen ? 'Это мой район' : 'Выбери район'}
       </Button>
     </Screen>
+  );
+}
+
+/** Узнаваемые городские сигналы площадок, а не четвёртый набор логотипов. */
+function DistrictMark({ id }: { id: DistrictId }) {
+  if (id === 'direct') {
+    return (
+      <span className="grid size-13 place-items-center bg-[#f4d500] font-display text-2xl font-bold text-[#171407]">
+        Я
+      </span>
+    );
+  }
+
+  if (id === 'avito') {
+    return (
+      <span className="grid size-13 grid-cols-2 place-content-center gap-1 bg-[#171916]" aria-hidden="true">
+        <span className="size-3 rounded-full bg-[#00aaff]" />
+        <span className="size-3 rounded-full bg-[#ff6163]" />
+        <span className="size-3 rounded-full bg-[#97cf26]" />
+        <span className="size-3 rounded-full bg-[#a169f7]" />
+      </span>
+    );
+  }
+
+  return (
+    <span className="grid size-13 place-items-center bg-[#2787f5] font-display text-lg font-bold text-white">
+      VK
+    </span>
   );
 }
 

@@ -3,7 +3,7 @@ import { tool01, toolInvite, wallAudience } from '@/content/lab';
 import { useNav } from '@/router/useNav';
 import { useFunnel } from '@/store/funnel';
 import { Button } from '@/ui/Button';
-import { Screen } from '@/ui/CityStage';
+import { ScenePanel, Screen } from '@/ui/CityStage';
 import { ExternalButton } from '@/ui/ExternalButton';
 import { MetalPanel } from '@/ui/MetalPanel';
 import { Legend } from '@/ui/Plate';
@@ -46,30 +46,38 @@ export function WallScreen() {
       <div className="pt-8">
         <Legend className="text-hazard">{wallAudience.legend}</Legend>
 
-        {/* Стена. */}
-        <div className="mt-5 rounded-panel border border-line bg-scene-deep/70 p-6">
-          <p className="relative inline-block font-display text-xl font-semibold uppercase leading-tight tracking-wide text-ink-dim">
-            {wallAudience.before}
-            <span
-              aria-hidden="true"
-              className={cn(
-                'absolute inset-x-0 top-1/2 h-0.5 origin-left bg-alarm transition-transform duration-500 ease-out',
-                phase === 'before' ? 'scale-x-0' : 'scale-x-100',
-              )}
-            />
-          </p>
+        {/* Правило перечёркивают на настоящей доказательной стене. */}
+        <ScenePanel
+          asset="evidence-bay.webp"
+          alt="Стена Traffic Lab с распечатками запросов, рекламных кабинетов и переписки с клиентом"
+          className="mt-5 aspect-[4/5]"
+        >
+          <div className="flex h-full items-center p-4">
+            <div className="w-full border border-line bg-scene-deep/90 p-5 backdrop-blur-[2px]">
+              <p className="relative inline-block max-w-full font-display text-xl font-semibold uppercase leading-tight tracking-wide text-ink-dim">
+                {wallAudience.before}
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'absolute inset-x-0 top-1/2 h-0.5 origin-left bg-alarm transition-transform duration-500 ease-out',
+                    phase === 'before' ? 'scale-x-0' : 'scale-x-100',
+                  )}
+                />
+              </p>
 
-          <div
-            className={cn(
-              'transition-opacity duration-500',
-              phase === 'after' ? 'opacity-100' : 'opacity-0',
-            )}
-          >
-            <p className="neon-ink mt-6 font-display text-hero font-bold uppercase leading-none tracking-tight">
-              {wallAudience.after}
-            </p>
+              <div
+                className={cn(
+                  'transition-opacity duration-500',
+                  phase === 'after' ? 'opacity-100' : 'opacity-0',
+                )}
+              >
+                <p className="neon-ink mt-6 break-words font-display text-hero font-bold uppercase leading-none tracking-tight">
+                  {wallAudience.after}
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
+        </ScenePanel>
 
         <p
           className={cn(

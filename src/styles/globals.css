@@ -87,9 +87,8 @@
     pointer-events: none;
     background-position: center;
     background-size: cover;
-    opacity: 0.38;
-    transform: scale(1.015);
     filter: saturate(0.72) contrast(1.08) brightness(0.72);
+    will-change: opacity, transform;
   }
 
   .stage-scrim {
@@ -97,14 +96,13 @@
     inset: 0;
     pointer-events: none;
     background:
-      linear-gradient(180deg, rgba(5, 7, 6, 0.48) 0%, rgba(5, 7, 6, 0.68) 44%, rgba(5, 7, 6, 0.96) 100%),
-      linear-gradient(90deg, rgba(5, 7, 6, 0.58), transparent 42%, rgba(5, 7, 6, 0.28));
+      linear-gradient(180deg, rgba(5, 7, 6, 0.4) 0%, rgba(5, 7, 6, 0.58) 44%, rgba(5, 7, 6, 0.92) 100%),
+      linear-gradient(90deg, rgba(5, 7, 6, 0.5), transparent 48%, rgba(5, 7, 6, 0.2));
   }
 
   [data-step='town'] .stage-art,
   [data-step='exit'] .stage-art {
     background-position: 58% center;
-    opacity: 0.82;
     filter: saturate(0.74) contrast(1.08) brightness(0.8);
   }
 
@@ -119,19 +117,63 @@
   [data-step='map1'] .stage-art,
   [data-step='map2'] .stage-art,
   [data-step='mapfinal'] .stage-art {
-    opacity: 0.52;
     filter: saturate(0.7) contrast(1.12) brightness(0.58);
   }
 
   [data-act='lab'] .stage-art {
-    opacity: 0.46;
     background-position: center top;
   }
 
   [data-act='assembly'] .stage-art {
-    opacity: 0.4;
     background-position: center top;
     filter: saturate(0.62) contrast(1.12) brightness(0.62);
+  }
+
+  [data-act='lab'] .stage-scrim {
+    background:
+      linear-gradient(180deg, rgba(7, 6, 4, 0.38), rgba(7, 6, 4, 0.56) 52%, rgba(7, 6, 4, 0.92)),
+      linear-gradient(90deg, rgba(7, 6, 4, 0.42), transparent 50%, rgba(7, 6, 4, 0.18));
+  }
+
+  [data-act='assembly'] .stage-scrim {
+    background:
+      linear-gradient(180deg, rgba(3, 5, 3, 0.34), rgba(3, 5, 3, 0.54) 52%, rgba(3, 5, 3, 0.9)),
+      linear-gradient(90deg, rgba(3, 5, 3, 0.44), transparent 52%, rgba(3, 5, 3, 0.16));
+  }
+
+  [data-step='district'] .stage-scrim,
+  [data-step='turn'] .stage-scrim {
+    background: linear-gradient(
+      180deg,
+      rgba(4, 6, 5, 0.38),
+      rgba(4, 6, 5, 0.5) 48%,
+      rgba(4, 6, 5, 0.9)
+    );
+  }
+
+  [data-step='exit'] .stage-scrim {
+    background:
+      linear-gradient(180deg, rgba(3, 5, 4, 0.3), rgba(3, 5, 4, 0.14) 54%, rgba(3, 5, 4, 0.86)),
+      linear-gradient(90deg, rgba(3, 5, 4, 0.46), transparent 68%);
+  }
+
+  /**
+   * Контентный кадр: не карточка, а зарезервированное окно в физическую сцену.
+   * Один и тот же источник можно использовать фоном и крупным планом без
+   * дополнительного запроса; фиксированный aspect-ratio исключает CLS.
+   */
+  .scene-panel {
+    box-shadow: inset 0 1px 0 color-mix(in oklab, #fff 9%, transparent);
+  }
+
+  .scene-panel-scrim {
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--color-scene-deep) 10%, transparent),
+      color-mix(in oklab, var(--color-scene-deep) 22%, transparent) 48%,
+      color-mix(in oklab, var(--color-scene-deep) 86%, transparent)
+    );
   }
 
   /**
@@ -398,6 +440,10 @@
 
     .route-draw {
       stroke-dashoffset: 0;
+    }
+
+    .stage-art {
+      will-change: auto;
     }
   }
 }

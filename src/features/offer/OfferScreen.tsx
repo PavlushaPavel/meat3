@@ -1,5 +1,5 @@
 import { checkout, finalThought, offer, support } from '@/content/offer';
-import { Screen } from '@/ui/CityStage';
+import { ScenePanel, Screen } from '@/ui/CityStage';
 import { ExternalButton } from '@/ui/ExternalButton';
 import { MetalPanel } from '@/ui/MetalPanel';
 import { Legend, Plate } from '@/ui/Plate';
@@ -36,6 +36,13 @@ export function OfferScreen() {
           ))}
         </div>
       </div>
+
+      <ScenePanel
+        asset="own-line-kit.webp"
+        alt="Собственная переносимая сборочная линия на рабочем столе Traffic Lab"
+        className="aspect-[4/5]"
+        imageClassName="object-[50%_54%]"
+      />
 
       <MetalPanel rivets className="p-5">
         <div className="space-y-2">

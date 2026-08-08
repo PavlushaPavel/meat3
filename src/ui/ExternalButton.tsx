@@ -25,14 +25,18 @@ export function ExternalButton({
     return (
       <div
         className={cn(
-          'flex min-h-14 w-full items-center justify-between gap-3 rounded-plate border border-dashed border-line px-5 py-3',
+          'flex min-h-14 w-full min-w-0 flex-col items-start justify-center gap-1.5 rounded-plate border border-dashed border-line px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3',
           className,
         )}
       >
-        <span className="font-display text-lg font-semibold uppercase tracking-wide text-ink-dim/60">
+        <span className="min-w-0 max-w-full break-words font-display text-lg font-semibold uppercase tracking-wide text-ink-dim/60">
           {action.label}
         </span>
-        {action.pending && <span className="legend shrink-0 text-ink-dim/70">{action.pending}</span>}
+        {action.pending && (
+          <span className="legend min-w-0 max-w-full break-words text-ink-dim/70">
+            {action.pending}
+          </span>
+        )}
       </div>
     );
   }

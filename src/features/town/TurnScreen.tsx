@@ -1,8 +1,7 @@
 import { positiveTurn } from '@/content/town';
 import { useNav } from '@/router/useNav';
 import { Button } from '@/ui/Button';
-import { Screen } from '@/ui/CityStage';
-import { MetalPanel } from '@/ui/MetalPanel';
+import { ScenePanel, Screen } from '@/ui/CityStage';
 import { Legend, Plate } from '@/ui/Plate';
 
 /**
@@ -31,9 +30,14 @@ export function TurnScreen() {
           ))}
         </div>
 
-        {/* На карте появляется странный объект. */}
-        <MetalPanel rivets className="mt-8 overflow-hidden">
-          <div className="flex flex-col items-center gap-3 p-5">
+        {/* Впервые показываем не значок на карте, а само место. */}
+        <ScenePanel
+          asset="traffic-lab-exterior.webp"
+          alt="Закрытые ворота промышленного комплекса Traffic Lab ночью"
+          className="mt-8 aspect-[4/5]"
+          imageClassName="object-[50%_58%]"
+        >
+          <div className="flex h-full flex-col items-center justify-end gap-3 p-4">
             <Plate worn className="w-full">
               <p className="text-center font-display text-3xl font-bold uppercase leading-none tracking-tight">
                 {positiveTurn.lab.name}
@@ -43,7 +47,7 @@ export function TurnScreen() {
             <p className="legend text-alarm lamp-alarm">{positiveTurn.lab.status}</p>
             <p className="text-center text-small text-ink-dim">{positiveTurn.lab.caption}</p>
           </div>
-        </MetalPanel>
+        </ScenePanel>
       </div>
 
       <Button onClick={next}>{positiveTurn.cta}</Button>

@@ -5,7 +5,7 @@ import { useNav } from '@/router/useNav';
 import { useFunnel } from '@/store/funnel';
 import { Blocks } from '@/ui/Blocks';
 import { Button } from '@/ui/Button';
-import { Screen } from '@/ui/CityStage';
+import { ScenePanel, Screen } from '@/ui/CityStage';
 import { ExternalButton } from '@/ui/ExternalButton';
 import { MetalPanel } from '@/ui/MetalPanel';
 import { Legend } from '@/ui/Plate';
@@ -109,24 +109,39 @@ export function Video2Screen() {
       {/* Стол с пробами: не каждый оффер реагирует с каждой аудиторией. */}
       <div>
         <Legend className="text-hazard">{probes.legend}</Legend>
-        <div className="mt-3 space-y-2.5">
-          {probes.items.map((p) => (
-            <MetalPanel key={p.code} className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <Legend>{p.code}</Legend>
-                <span
+        <ScenePanel
+          asset="offer-workbench.webp"
+          alt="Две пробы оффера на рабочем столе: инертная и давшая реакцию"
+          className="mt-3 aspect-[4/5]"
+          imageClassName="object-[50%_58%]"
+        >
+          <div className="flex h-full items-end p-3">
+            <div className="grid w-full grid-cols-2 gap-2">
+              {probes.items.map((p) => (
+                <div
+                  key={p.code}
                   className={cn(
-                    'legend shrink-0 px-1.5 py-0.5',
-                    p.reacts ? 'bg-neon text-on-neon' : 'border border-line text-ink-dim',
+                    'min-w-0 border bg-scene-deep/90 p-3 backdrop-blur-[2px]',
+                    p.reacts ? 'border-neon/70' : 'border-line',
                   )}
                 >
-                  {p.status}
-                </span>
-              </div>
-              <p className="mt-2 text-base text-ink">«{p.text}»</p>
-            </MetalPanel>
-          ))}
-        </div>
+                  <div className="flex min-w-0 flex-col items-start gap-1.5">
+                    <Legend>{p.code}</Legend>
+                    <span
+                      className={cn(
+                        'legend max-w-full break-words px-1.5 py-0.5',
+                        p.reacts ? 'bg-neon text-on-neon' : 'border border-line text-ink-dim',
+                      )}
+                    >
+                      {p.status}
+                    </span>
+                  </div>
+                  <p className="mt-2 break-words text-small leading-snug text-ink">«{p.text}»</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </ScenePanel>
         <p className="mt-3 font-display text-lead font-semibold uppercase leading-snug">
           {probes.conclusion}
         </p>
@@ -159,20 +174,24 @@ export function Video3Screen() {
       <div>
         <Legend className="text-neon">{assemblyLine.legend}</Legend>
 
-        <ol className="mt-3 space-y-1.5">
-          {assemblyLine.chain.map((part, i) => (
-            <li key={part}>
-              {i > 0 && (
-                <p aria-hidden="true" className="text-center text-sm leading-none text-neon">
-                  ↓
-                </p>
-              )}
-              <p className="neon-edge rounded-plate border border-neon/50 px-4 py-2.5 text-center font-display text-base font-semibold uppercase tracking-wide text-ink">
-                {part}
-              </p>
-            </li>
-          ))}
-        </ol>
+        <ScenePanel
+          asset="landing-assembly-line.webp"
+          alt="Пять рабочих станций сборочной линии, соединённых одним светящимся маршрутом"
+          className="mt-3 aspect-[4/5]"
+        >
+          <div className="flex h-full items-end p-3">
+            <ol className="w-full border border-neon/40 bg-scene-deep/88 px-3 py-2 backdrop-blur-[2px]">
+              {assemblyLine.chain.map((part, i) => (
+                <li key={part} className="flex items-center gap-3 py-1.5">
+                  <span className="font-mono text-small text-neon">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="font-display text-base font-semibold uppercase tracking-wide text-ink">
+                    {part}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </ScenePanel>
 
         {/* Система лаборатории отчитывается о результате. */}
         <div className="mt-5 bg-neon px-4 py-4 text-center text-on-neon">

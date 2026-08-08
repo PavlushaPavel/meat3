@@ -16,19 +16,24 @@ export function VideoFrame({ content }: { content: VideoContent }) {
   const url = env.video[content.envVar];
 
   if (!url) {
+    const idleArt = {
+      VITE_VIDEO_1_URL: 'evidence-bay.webp',
+      VITE_VIDEO_2_URL: 'offer-workbench.webp',
+      VITE_VIDEO_3_URL: 'landing-assembly-line.webp',
+    }[content.envVar];
+
     return (
-      <div className="relative aspect-video w-full overflow-hidden rounded-panel border border-dashed border-line bg-scene-deep">
-        {/* Развёртка неподключённого монитора: горизонтальные строки. */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 opacity-25"
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(0deg, var(--color-line) 0 1px, transparent 1px 4px)',
-          }}
+      <div className="relative aspect-video w-full overflow-hidden rounded-panel border border-line bg-scene-deep">
+        <img
+          src={`${import.meta.env.BASE_URL}world/${idleArt}`}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 size-full object-cover opacity-55 saturate-[0.72]"
         />
+        <div className="absolute inset-0 bg-scene-deep/62" aria-hidden="true" />
         <div className="absolute inset-0 grid place-items-center px-6 text-center">
-          <div>
+          <div className="border border-dashed border-line bg-scene-deep/86 px-5 py-3 backdrop-blur-[2px]">
             <Legend className="text-hazard">{content.protocol}</Legend>
             <p className="mt-2 text-small text-ink-dim">{videoEmptyLabel}</p>
           </div>

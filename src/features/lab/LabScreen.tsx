@@ -1,8 +1,7 @@
 import { labEntry } from '@/content/lab';
 import { useNav } from '@/router/useNav';
 import { Button } from '@/ui/Button';
-import { Screen } from '@/ui/CityStage';
-import { MetalPanel } from '@/ui/MetalPanel';
+import { ScenePanel, Screen } from '@/ui/CityStage';
 import { Legend, TapeStrip } from '@/ui/Plate';
 import { cn } from '@/lib/cn';
 
@@ -28,43 +27,55 @@ export function LabScreen() {
 
         <TapeStrip className="mt-5" />
 
-        {/* Формула на большой стене. */}
-        <MetalPanel className="mt-6 p-5">
-          <div className="space-y-2.5">
-            {labEntry.formula.map((part, i) => {
-              const isTraffic = part === 'ТРАФИК';
-              return (
-                <div key={part}>
-                  {i > 0 && (
-                    <p aria-hidden="true" className="py-1 text-center text-lg text-ink-dim">
-                      ×
-                    </p>
-                  )}
-                  <p
-                    className={cn(
-                      'rounded-plate border px-4 py-3 text-center font-display text-xl font-semibold uppercase tracking-wide',
-                      isTraffic
-                        ? 'neon-edge border-neon text-neon'
-                        : 'border-line text-ink-dim',
-                    )}
-                  >
-                    {part}
-                    {isTraffic && (
-                      <span className="legend mt-1 block text-ink-dim">ТВОЙ РАЙОН</span>
-                    )}
-                  </p>
-                </div>
-              );
-            })}
+        {/* Формула живёт на настоящей стене, а не в четырёх одинаковых карточках. */}
+        <ScenePanel
+          asset="formula-hall.webp"
+          alt="Формульный зал Traffic Lab с четырьмя соединёнными рабочими станциями"
+          className="mt-6 aspect-[4/5]"
+        >
+          <div className="flex h-full items-center p-4">
+            <div className="w-full border border-line bg-scene-deep/85 p-3 backdrop-blur-[2px]">
+              <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
+                {labEntry.formula.map((part, i) => {
+                  const isTraffic = part === 'ТРАФИК';
+                  return (
+                    <div key={part} className="contents">
+                      {i > 0 && i % 2 === 1 && (
+                        <span aria-hidden="true" className="grid place-items-center text-ink-dim">
+                          ×
+                        </span>
+                      )}
+                      {i === 2 && <span aria-hidden="true" className="col-span-3 h-px bg-line" />}
+                      <p
+                        className={cn(
+                          'grid min-h-16 place-items-center border px-2 py-3 text-center font-display text-base font-semibold uppercase tracking-wide',
+                          i % 2 === 0 ? 'col-start-1' : 'col-start-3',
+                          isTraffic
+                            ? 'neon-edge border-neon text-neon'
+                            : 'border-line bg-scene-deep/70 text-ink',
+                        )}
+                      >
+                        <span>
+                          {part}
+                          {isTraffic && (
+                            <span className="legend mt-1 block text-ink-dim">ТВОЙ РАЙОН</span>
+                          )}
+                        </span>
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
 
-            <p aria-hidden="true" className="py-1 text-center text-lg text-ink-dim">
-              =
-            </p>
-            <p className="bg-hazard px-4 py-3 text-center font-display text-2xl font-bold uppercase tracking-wide text-on-hazard">
-              {labEntry.result}
-            </p>
+              <p aria-hidden="true" className="py-2 text-center text-lg text-ink-dim">
+                =
+              </p>
+              <p className="bg-hazard px-4 py-3 text-center font-display text-2xl font-bold uppercase tracking-wide text-on-hazard">
+                {labEntry.result}
+              </p>
+            </div>
           </div>
-        </MetalPanel>
+        </ScenePanel>
 
         <p className="mt-6 font-display text-lead font-semibold uppercase leading-snug text-ink">
           {labEntry.lead}

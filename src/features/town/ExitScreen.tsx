@@ -1,7 +1,6 @@
 import { cityExit } from '@/content/town';
 import { useNav } from '@/router/useNav';
 import { Button } from '@/ui/Button';
-import { CitySkyline } from '@/ui/CitySkyline';
 import { Screen } from '@/ui/CityStage';
 import { Legend } from '@/ui/Plate';
 
@@ -33,7 +32,9 @@ export function ExitScreen() {
       </div>
 
       <div>
-        <CitySkyline className="mb-8 opacity-100" />
+        {/* Открытые двери и город уже находятся в сценографии. Пустота даёт
+            увидеть маршрут, а не прячет его за ещё одним UI-блоком. */}
+        <div className="h-[34vh] min-h-56" aria-hidden="true" />
 
         <p className="neon-ink mb-7 font-display text-lead font-semibold uppercase leading-snug">
           {cityExit.lead}
