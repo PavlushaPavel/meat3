@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import { homeDistrict } from '@/content/town';
 import { districtCopy } from '@/content/districts';
 import { useNav } from '@/router/useNav';
@@ -6,10 +7,10 @@ import { useFunnel } from '@/store/funnel';
 import { FALLBACK_DISTRICT, districtById } from '@/world';
 import { Button } from '@/ui/Button';
 import { Screen } from '@/ui/CityStage';
+import { IncomingMessage } from '@/ui/IncomingMessage';
 import { MetalPanel } from '@/ui/MetalPanel';
 import { Legend } from '@/ui/Plate';
-import { haptics } from '@/lib/telegram';
-import { cn } from '@/lib/cn';
+import { vibrate } from '@/lib/telegram';
 
 /**
  * Шаг 3. «Вот твой район».
@@ -19,25 +20,41 @@ import { cn } from '@/lib/cn';
  * слов — у директолога минус-слова и Мастер отчётов, у авитолога позиции и
  * контакты, у таргетолога CPM и лид-формы. Одно чужое слово здесь ломает всё.
  *
- * И на этом спокойном экране приходит стук: сообщение падает посреди
- * перечисления, которым человек только что гордился.
+ * И на этом спокойном экране приходит уведомление от клиента.
  */
+
+/** Уведомление прилетает: телефон дёргается один раз. */
+const ARRIVES_AT = 2400;
+/** Точки «печатает» сменяются текстом: короткая двойная вибрация. */
+const DELIVERED_AT = 4000;
+
 export function HomeScreen() {
   const { next } = useNav();
   const districtId = useFunnel((s) => s.district);
   const district = districtId ? districtById(districtId) : FALLBACK_DISTRICT;
   const copy = districtCopy(district.id);
+  const reduceMotion = useReducedMotion();
 
-  const [knocked, setKnocked] = useState(false);
+  /** `none` → `typing` → `delivered`. */
+  const [phase, setPhase] = useState<'none' | 'typing' | 'delivered'>('none');
 
-  // Стук приходит сам, без действия человека: сообщение от клиента не ждёт,
-  // пока ты дочитаешь.
   useEffect(() => {
-    const t = window.setTimeout(() => {
-      setKnocked(true);
-      haptics.heavy();
-    }, 2600);
-    return () => window.clearTimeout(t);
+    const arrive = window.setTimeout(() => {
+      setPhase('typing');
+      // Один короткий толчок — телефон в кармане дёрнулся.
+      vibrate(24);
+    }, ARRIVES_AT);
+
+    const deliver = window.setTimeout(() => {
+      setPhase('delivered');
+      // Двойной импульс: сообщение дописано и легло в ленту.
+      vibrate([18, 60, 28]);
+    }, DELIVERED_AT);
+
+    return () => {
+      window.clearTimeout(arrive);
+      window.clearTimeout(deliver);
+    };
   }, []);
 
   return (
@@ -71,24 +88,36 @@ export function HomeScreen() {
       </div>
 
       {/*
-        Стук в дверь. До него на экране НЕТ НИ ОДНОГО действия — и блока тоже
-        нет в разметке. Первая версия держала его здесь прозрачным и с
-        неактивной кнопкой: выглядело так же, но скринридер зачитывал «ТУК-ТУК,
-        кажется, тебе пишут» сразу при входе на экран, то есть сообщал о
-        событии, которого ещё не случилось, и заранее убивал весь эффект.
-      */}
-      {knocked && (
-        <div className={cn('animate-[level-tick_0.4s_var(--ease-snap)_both]')}>
-          <div className="mb-4 flex items-center gap-3 border-t border-dashed border-line pt-4">
-            <span className="legend bg-hazard px-2 py-1 text-on-hazard">
-              {homeDistrict.knock.mark}
-            </span>
-            <p className="text-base text-ink">{homeDistrict.knock.line}</p>
-          </div>
+        Уведомления НЕТ В РАЗМЕТКЕ, пока оно не пришло. Первая версия держала
+        блок здесь прозрачным: выглядело так же, но скринридер зачитывал его
+        сразу при входе на экран — то есть сообщал о событии, которого ещё не
+        случилось, и заранее убивал весь эффект.
 
-          <Button onClick={next}>{homeDistrict.knock.cta}</Button>
-        </div>
-      )}
+        `aria-live` нужен ровно затем, чтобы этот же скринридер объявил
+        уведомление ТОГДА, когда оно действительно пришло.
+      */}
+      <div aria-live="polite" className="space-y-4">
+        {phase !== 'none' && (
+          <>
+            <IncomingMessage
+              sender={homeDistrict.knock.sender}
+              typing={homeDistrict.knock.typing}
+              text={copy.chat[0].text}
+              delivered={phase === 'delivered'}
+            />
+
+            {phase === 'delivered' && (
+              <motion.div
+                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <Button onClick={next}>{homeDistrict.knock.cta}</Button>
+              </motion.div>
+            )}
+          </>
+        )}
+      </div>
     </Screen>
   );
 }

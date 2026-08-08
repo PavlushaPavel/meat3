@@ -61,12 +61,20 @@ describe('воронка при пустом окружении', () => {
     press(/DIRECT DISTRICT/);
     press(districtChoice.cta);
 
-    // Свой район: инструменты на его языке, потом стук в дверь. Кнопка до
-    // стука неактивна — ждём, как ждал бы человек.
+    // Свой район: инструменты на его языке. Потом приходит уведомление от
+    // клиента — сначала «печатает», потом текст. Кнопки до этого нет вообще,
+    // ждём, как ждал бы человек.
     expect(screen.getByText(DISTRICT_COPY.direct.home.tools[0])).toBeDefined();
+    expect(screen.queryByRole('button', { name: homeDistrict.knock.cta })).toBeNull();
+
+    await waitFor(() => expect(screen.getByText(homeDistrict.knock.typing)).toBeDefined(), {
+      timeout: 4000,
+    });
+    // Превью обязано совпадать с первым сообщением района, а не быть своим
+    // текстом: иначе уведомление обещает одно, а в чате лежит другое.
     await waitFor(
-      () => expect(screen.getByText(homeDistrict.knock.mark)).toBeDefined(),
-      { timeout: 4000 },
+      () => expect(screen.getByText(DISTRICT_COPY.direct.chat[0].text)).toBeDefined(),
+      { timeout: 5000 },
     );
     press(homeDistrict.knock.cta);
 
@@ -169,7 +177,10 @@ describe('воронка при пустом окружении', () => {
     // --- Оффер ---
     expect(screen.getByText(offer.price)).toBeDefined();
     expect(useFunnel.getState().step).toBe(STEPS[STEPS.length - 1]);
-  });
+    // Запас по времени: экран своего района честно ждёт уведомление четыре
+    // секунды, как ждал бы человек. Сокращать паузу ради теста нельзя —
+    // проверять надо ту воронку, которую увидят люди.
+  }, 20_000);
 
   it('оплата без ссылки не ведёт в никуда, а честно говорит, что её нет', () => {
     useFunnel.setState({ step: 'offer', district: 'direct' });

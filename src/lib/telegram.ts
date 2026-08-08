@@ -75,6 +75,35 @@ export const haptics: Haptics = {
 };
 
 /**
+ * ФИЗИЧЕСКАЯ ВИБРАЦИЯ ТЕЛЕФОНА.
+ *
+ * Два разных механизма, и оба нужны:
+ *  · внутри Telegram работает `HapticFeedback` — он единственный, что вообще
+ *    доступно в мини-аппе на iOS;
+ *  · в обычном браузере Telegram-API нет, зато на Android есть
+ *    `navigator.vibrate`, который берёт узор из пауз и импульсов.
+ *
+ * ЧЕСТНО ПРО iOS: вне Telegram Safari `navigator.vibrate` не поддерживает
+ * вообще, и обойти это нельзя. Значит, вибрация — усиление момента, а не
+ * носитель смысла: экран обязан читаться и без неё.
+ *
+ * @param pattern узор для `navigator.vibrate`, мс: импульс, пауза, импульс…
+ */
+export function vibrate(pattern: number | number[]): void {
+  // Внутри Telegram: настоящий системный отклик.
+  safeHaptic((h) => h.impactOccurred('heavy'));
+
+  // Вне Telegram: Web Vibration API, если он есть и разрешён.
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(pattern);
+    }
+  } catch {
+    // Браузер может запретить вибрацию без жеста пользователя — это не ошибка.
+  }
+}
+
+/**
  * Инициализация Mini App: раскрыть, сообщить о готовности, зафиксировать фирменные цвета.
  * Тема принудительно тёмная, тема клиента игнорируется намеренно (docs/SPEC.md §1).
  * Telegram WebApp принимает только конкретный hex, а не CSS-переменную — цвет читается
