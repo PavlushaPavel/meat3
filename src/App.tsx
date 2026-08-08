@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { SCREENS } from '@/router/registry';
 import { actOfStep } from '@/router/flow';
 import { useFunnel } from '@/store/funnel';
 import { initTelegram } from '@/lib/telegram';
 import { CityStage } from '@/ui/CityStage';
+import { DebugBar } from '@/ui/DebugBar';
+import { isDebugEnabled } from '@/lib/debug';
 
 /**
  * Оболочка воронки.
@@ -23,6 +25,8 @@ export default function App() {
   const step = useFunnel((s) => s.step);
   const Screen = SCREENS[step];
   const act = actOfStep(step);
+  // Читается один раз за загрузку: флаг не меняется по ходу сессии.
+  const [debug] = useState(isDebugEnabled);
 
   useEffect(() => {
     initTelegram();
@@ -36,8 +40,16 @@ export default function App() {
   }, [step]);
 
   return (
-    <CityStage act={act} step={step}>
-      <Screen />
-    </CityStage>
+    <>
+      {/*
+        Панель отладки живёт НАД сценой и в потоке документа: так она не может
+        перекрыть ни главное действие внизу, ни счётчик зон на карте. Без
+        `?debug` в адресе её нет в разметке вообще.
+      */}
+      {debug && <DebugBar />}
+      <CityStage act={act} step={step}>
+        <Screen />
+      </CityStage>
+    </>
   );
 }

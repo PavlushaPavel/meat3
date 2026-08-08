@@ -328,6 +328,36 @@ describe('три разных интерактива', () => {
   });
 });
 
+describe('панель отладки', () => {
+  /**
+   * Панель обязана быть невидимой для живого человека. Проверка не про
+   * удобство разработчика, а про то, что кнопка сброса не окажется на боевом
+   * адресе у того, кто проходит воронку.
+   */
+  afterEach(() => window.history.replaceState({}, '', '/'));
+
+  it('без флага в адресе её нет в разметке вообще', () => {
+    useFunnel.setState({ step: 'lab', district: 'direct' });
+    render(<App />);
+
+    expect(screen.queryByRole('button', { name: /Начать сначала/ })).toBeNull();
+    expect(screen.queryByText('ОТЛАДКА')).toBeNull();
+  });
+
+  it('с флагом появляется и возвращает воронку на первый шаг', () => {
+    window.history.replaceState({}, '', '/?debug');
+    useFunnel.setState({ step: 'offer', district: 'avito' });
+    render(<App />);
+
+    expect(screen.getByText('ОТЛАДКА')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: /Начать сначала/ }));
+
+    expect(useFunnel.getState().step).toBe(STEPS[0]);
+    // Район тоже сбрасывается: иначе следующий проход пошёл бы с чужим языком.
+    expect(useFunnel.getState().district).toBeNull();
+  });
+});
+
 describe('честные заглушки', () => {
   it('во всех трёх протоколах слот записи сообщает, что материала нет', () => {
     for (const step of ['video1', 'video2', 'video3'] as const) {
