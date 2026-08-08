@@ -119,7 +119,6 @@ function MapHeader({ step }: { step: StepKey }) {
     <div className="flex items-start justify-between gap-3">
       <div>
         <p className="legend text-ink-dim">TRAFFIC TOWN</p>
-        <p className="legend text-ink-dim/70">СЕКТОР 77</p>
       </div>
       <div className="metal-panel rounded-plate px-2.5 py-1 text-center">
         <p className="legend text-ink-dim">ОТКРЫТО ЗОН</p>

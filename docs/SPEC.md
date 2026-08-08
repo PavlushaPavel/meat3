@@ -1,4 +1,4 @@
-# SPEC — TRAFFIC TOWN × TRAFFIC LAB
+# SPEC — TRAFFIC TOWN
 
 Канон мира и маршрута. Всё, что противоречит этому документу, — ошибка.
 

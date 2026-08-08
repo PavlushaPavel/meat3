@@ -17,7 +17,9 @@ import { LAB_NAME } from '../world';
 
 /** Шаг 1. Ночной город и обещание. */
 export const townIntro = {
-  legend: 'СЕКТОР 77 · НОЧЬ',
+  // «Сектор 77» убран: число было эхом прежнего имени лаборатории (LAB 77)
+  // и после переименования перестало на что-либо указывать.
+  legend: 'НОЧЬ',
   title: 'TRAFFIC TOWN',
   welcome: 'Добро пожаловать в Traffic Town.',
   blocks: [
