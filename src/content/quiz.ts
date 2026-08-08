@@ -1,3 +1,4 @@
+import { LAB_NAME } from '../world';
 import type { QuizQuestion } from './types';
 
 /**
@@ -19,7 +20,7 @@ import type { QuizQuestion } from './types';
  */
 
 export const quizIntro = {
-  legend: 'LAB 77 · КОНТРОЛЬ КАЧЕСТВА',
+  legend: `${LAB_NAME} · КОНТРОЛЬ КАЧЕСТВА`,
   title: 'Допуск в сборочный цех',
   standfirst: 'Докажи, что теперь смотришь не только на рекламный кабинет.',
   facts: ['12 ситуаций', '5 жизней', 'Проверяем решения, а не термины'],

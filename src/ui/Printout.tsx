@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { LAB_NAME } from '@/world';
 
 /**
  * Распечатка: лист со стены лаборатории. Единственная светлая поверхность мира
@@ -34,7 +35,7 @@ export function Printout({
         <header className="mb-5 flex items-center justify-between border-b border-dashed border-paper-line pb-2">
           <span className="legend text-paper-ink-dim">{slug}</span>
           <span aria-hidden="true" className="legend text-paper-ink-dim">
-            LAB 77
+            {LAB_NAME}
           </span>
         </header>
       )}

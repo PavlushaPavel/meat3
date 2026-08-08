@@ -12,6 +12,7 @@ import { Legend } from '@/ui/Plate';
 import { Printout } from '@/ui/Printout';
 import { useEffect, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { LAB_NAME } from '@/world';
 import { VideoFrame } from './VideoFrame';
 
 /**
@@ -36,7 +37,7 @@ function ProtocolScreen({
     <Screen className="gap-6 py-7">
       <div>
         <Legend className="text-hazard">
-          LAB 77 · {content.protocol}
+          {LAB_NAME} · {content.protocol}
         </Legend>
         <h1 className="mt-2 font-display text-title font-bold uppercase leading-tight">
           {content.title}
@@ -75,7 +76,7 @@ export function Video1EndScreen() {
   return (
     <Screen className="gap-6 py-7">
       <div>
-        <Legend className="text-hazard">LAB 77 · ПРОТОКОЛ 01 · ФИНАЛ</Legend>
+        <Legend className="text-hazard">{LAB_NAME} · ПРОТОКОЛ 01 · ФИНАЛ</Legend>
         <h1 className="mt-2 font-display text-title font-bold uppercase leading-tight">
           {video1Outro.title}
         </h1>
@@ -173,7 +174,7 @@ export function Video3Screen() {
           ))}
         </ol>
 
-        {/* Система LAB 77 отчитывается о результате. */}
+        {/* Система лаборатории отчитывается о результате. */}
         <div className="mt-5 bg-neon px-4 py-4 text-center text-on-neon">
           <p className="font-display text-2xl font-bold uppercase leading-none tracking-tight">
             {assemblyLine.assembled}

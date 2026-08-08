@@ -1,3 +1,4 @@
+import { LAB_NAME } from '../world';
 import type { LongreadContent } from './types';
 
 /**
@@ -53,7 +54,7 @@ export const longread1: LongreadContent = {
 export const longread2: LongreadContent = {
   title: 'Человек не знает, что ты его понял',
   slug: 'ДОК. 02 · ПОСЛЕ ПРОТОКОЛА 01',
-  next: 'Вернуться в LAB 77',
+  next: `Вернуться в ${LAB_NAME}`,
   blocks: [
     { kind: 'p', text: 'Смотри.' },
     { kind: 'p', text: 'Теперь ты уже понимаешь достаточно неприятную вещь.' },

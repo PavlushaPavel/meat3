@@ -45,7 +45,7 @@ describe('туман', () => {
   });
 
   it('лаборатория к финалу открыта — человек в ней был', () => {
-    expect(zoneState('lab77', last)).toBe('open');
+    expect(zoneState('trafficLab', last)).toBe('open');
   });
 });
 

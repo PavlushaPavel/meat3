@@ -59,6 +59,20 @@ export const FALLBACK_DISTRICT: District = DISTRICTS[0];
 // Зоны города
 // ---------------------------------------------------------------------------
 
+/**
+ * Имя лаборатории. ЕДИНСТВЕННОЕ МЕСТО, где оно записано.
+ *
+ * До 08.08.2026 лаборатория звалась «LAB 77», и это имя лежало literals'ами в
+ * сорока четырёх местах двадцати файлов — от плашки на входе до заголовка
+ * страницы и канона. Переименование по просьбе заказчика превратилось в
+ * вычистку всего проекта. Больше так не делаем: имя объявлено здесь, всё
+ * остальное на него ссылается.
+ *
+ * Написание с двумя «f» — как в TRAFFIC TOWN. Заказчик прислал «Trafic Lab» с
+ * одной, но рядом с городом это читается как опечатка, а не как приём.
+ */
+export const LAB_NAME = 'TRAFFIC LAB';
+
 export type ZoneId =
   | 'audience'
   | 'offerMarket'
@@ -66,7 +80,7 @@ export type ZoneId =
   | 'landing'
   | 'leadGate'
   | 'sales'
-  | 'lab77';
+  | 'trafficLab';
 
 /**
  * Состояние зоны на карте.
@@ -86,7 +100,8 @@ export interface Zone {
   caption: string;
   /**
    * Входит ли зона в цепочку «аудитория → оффер → реклама → посадочная →
-   * заявка → ОП». LAB 77 не входит: это промзона, где учат, а не звено пути.
+   * заявка → ОП». Лаборатория не входит: это промзона, где учат, а не звено
+   * пути.
    */
   inChain: boolean;
 }
@@ -139,9 +154,9 @@ export const ZONES: Record<ZoneId, Zone> = {
     caption: 'Менеджеры, CRM, цена, продукт',
     inChain: true,
   },
-  lab77: {
-    id: 'lab77',
-    name: 'LAB 77',
+  trafficLab: {
+    id: 'trafficLab',
+    name: LAB_NAME,
     caption: 'Здесь собирают рекламные связки',
     inChain: false,
   },
@@ -173,7 +188,7 @@ const ZONE_SCHEDULE: Record<ZoneId, { shapeAt: StepKey | null; knownAt: StepKey 
   sales: { shapeAt: 'zoomout', knownAt: 'zoomout', openAt: null },
 
   // Промзона: появляется на повороте, открывается входом в лабораторию.
-  lab77: { shapeAt: 'turn', knownAt: 'turn', openAt: 'lab' },
+  trafficLab: { shapeAt: 'turn', knownAt: 'turn', openAt: 'lab' },
 };
 
 /** Достигнут ли шаг `mark` к моменту `step`. `null` — никогда не достигнут. */

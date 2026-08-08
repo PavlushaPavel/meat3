@@ -1,3 +1,5 @@
+import { LAB_NAME } from '../world';
+
 /**
  * Копирайт города: вход, выбор района, отдаление карты, поворот и все
  * переходные экраны карты (шаги `town`, `district`, `zoomout`, `turn`,
@@ -73,7 +75,7 @@ export const positiveTurn = {
   ],
   /** Табличка промзоны, которая появляется на карте после этих слов. */
   lab: {
-    name: 'LAB 77',
+    name: LAB_NAME,
     status: 'ACCESS RESTRICTED',
     caption: 'Здесь собирают рекламные связки',
   },

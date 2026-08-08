@@ -2,6 +2,7 @@ import { cn } from '@/lib/cn';
 import type { StepKey } from '@/router/flow';
 import {
   CHAIN,
+  LAB_NAME,
   ZONES,
   levelLabel,
   zoneName,
@@ -101,7 +102,7 @@ export function TownMap({
         <ZoneRow id={SALES_ZONE} state={zoneState(SALES_ZONE, step)} district={district} />
       </div>
 
-      <Lab77Marker state={zoneState('lab77', step)} />
+      <LabMarker state={zoneState('trafficLab', step)} />
     </div>
   );
 }
@@ -216,7 +217,7 @@ function ZoneRow({
 }
 
 /** Промзона лаборатории. Стоит в стороне: это не звено пути, а место учёбы. */
-function Lab77Marker({ state }: { state: ZoneState }) {
+function LabMarker({ state }: { state: ZoneState }) {
   if (state === 'fog' || state === 'shape') return null;
 
   const open = state === 'open';
@@ -232,7 +233,9 @@ function Lab77Marker({ state }: { state: ZoneState }) {
         ⚠
       </span>
       <div className="min-w-0">
-        <p className="font-display text-base font-semibold uppercase tracking-wide">LAB 77</p>
+        <p className="font-display text-base font-semibold uppercase tracking-wide">
+          {LAB_NAME}
+        </p>
         <p className="legend text-ink-dim">
           {open ? 'ДОСТУП ОТКРЫТ' : 'ACCESS RESTRICTED'}
         </p>
@@ -264,7 +267,7 @@ function ZoneGlyph({ id, district }: { id: ZoneId; district: District }) {
     // Знак валюты: отдел продаж.
     sales: 'M12 3v18M8.5 7h5.5a3 3 0 010 6H9a3 3 0 000 6h6',
     // Треугольник опасности: промзона.
-    lab77: 'M12 4l9 16H3z',
+    trafficLab: 'M12 4l9 16H3z',
   };
 
   return (

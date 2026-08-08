@@ -196,7 +196,7 @@
   /**
    * Диагональная лента. Жёлтая разметка означает опасность и промзону, поэтому
    * стоит только там, где по смыслу опасно или закрыто: ACCESS RESTRICTED,
-   * ACCESS DENIED, провал контроля, шапка LAB 77 (docs/SPEC.md §5.3).
+   * ACCESS DENIED, провал контроля, шапка TRAFFIC LAB (docs/SPEC.md §5.3).
    */
   .hazard-tape {
     background-image: repeating-linear-gradient(
