@@ -30,6 +30,8 @@ import { BuyersScreen } from '@/features/buyers/BuyersScreen';
 import {
   Video1EndScreen,
   Video1Screen,
+  AssemblyScreen,
+  PromisesScreen,
   Video2Screen,
   Video3Screen,
 } from '@/features/video/VideoScreens';
@@ -77,6 +79,8 @@ export const SCREENS: Record<StepKey, () => ReactElement> = {
   verdict: () => <VerdictScreen />,
   long3: () => <LongreadScreen content={longread3} />,
   video3: () => <Video3Screen />,
+  promises: () => <PromisesScreen />,
+  assembly: () => <AssemblyScreen />,
   catharsis: () => <CatharsisScreen />,
   mapfinal: () => <MapFinalScreen />,
   exit: () => <ExitScreen />,

@@ -8,14 +8,14 @@ import { homeDistrict } from '@/content/town';
 import { DISTRICTS, type DistrictId } from '@/world';
 import { barrier, labEntry, assemblyLine } from '@/content/lab';
 import { EXPERIMENT1, epiphany, experiment2Choice, formulas, moneyBridge, toolGranted } from '@/content/experiments';
-import { catharsisIntro, catharsisLabels } from '@/content/finale';
+import { catharsisIntro, catharsisLabels, promisesScreen } from '@/content/finale';
 import { QUESTIONS_PER_RUN, quizBank } from '@/content/quizBanks';
 import { longread1, longread2, longread3, longread4 } from '@/content/longreads';
 import { checkout, offer } from '@/content/offer';
 import { quizIntro, quizPassed } from '@/content/quiz';
 import { situationPrompt, situationReply } from '@/content/situation';
 import { cityExit, districtChoice, map1, map2, mapFinal, townIntro, zoomOut } from '@/content/town';
-import { video1, video1Outro, video2, videoEmptyLabel } from '@/content/videos';
+import { video1, video1Outro, video2, video3, videoEmptyLabel } from '@/content/videos';
 import { STEPS } from '@/router/flow';
 import { useFunnel } from '@/store/funnel';
 
@@ -158,6 +158,11 @@ describe('воронка при пустом окружении', () => {
     press(quizPassed.cta);
 
     press(longread3.next);
+
+    // Эксперимент 03 разрезан на три экрана: мост, три обещания, сборка.
+    press(video3.next);
+    expect(screen.getByText(promisesScreen.title)).toBeDefined();
+    press(promisesScreen.cta);
     expect(screen.getByText(assemblyLine.assembled)).toBeDefined();
     press(assemblyLine.cta);
 

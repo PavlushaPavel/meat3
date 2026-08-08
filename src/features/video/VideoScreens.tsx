@@ -1,6 +1,6 @@
 import { assemblyLine } from '@/content/lab';
 import { districtCopy } from '@/content/districts';
-import { experiment3 } from '@/content/finale';
+import { assemblyScreen, experiment3, promisesScreen } from '@/content/finale';
 import { FALLBACK_DISTRICT, districtById } from '@/world';
 import type { Block, VideoContent } from '@/content/types';
 import { video1, video1Outro, video2, video3 } from '@/content/videos';
@@ -137,8 +137,13 @@ export function Video2Screen() {
 }
 
 /**
- * Эксперимент 03. Три параллельных обещания: маркетинговое, денежное и про
- * удержание клиента.
+ * Эксперимент 03. Короткий мост от проблемы к решению плюс запись.
+ *
+ * РАЗРЕЗАН НА ТРИ ЭКРАНА. Раньше здесь на одном листе стояли подводка,
+ * распечатка, слот записи, три обещания, сборочная линия и «связка собрана» —
+ * получалась простыня, которую невозможно дочитать до кнопки. Теперь обещания
+ * и линия живут отдельно (`promises`, `assembly`), и каждый экран несёт одну
+ * мысль.
  *
  * ЗАГОЛОВОК ИДЁТ НЕ HERO-КЕГЛЕМ. Он длинный сознательно — несёт все три
  * обещания сразу, — но шесть строк крупным кеглем занимают на телефоне весь
@@ -158,52 +163,90 @@ export function Video3Screen() {
       title={experiment3.title}
       standfirst={experiment3.standfirst}
       onNext={next}
-      cta={assemblyLine.cta}
-    >
-      {/* Три обещания. */}
-      <div className="space-y-2.5">
-        {experiment3.promises.map((p) => (
-          <MetalPanel key={p.code} className="p-4">
-            <div className="flex items-baseline gap-3">
-              <span className="font-mono text-small text-neon">{p.code}</span>
-              <Legend className="text-hazard">{p.kind}</Legend>
-            </div>
-            <p className="mt-2 text-base leading-relaxed text-ink">{p.text}</p>
-          </MetalPanel>
-        ))}
-      </div>
+    />
+  );
+}
 
-      <div>
-        <Legend className="text-neon">{assemblyLine.legend}</Legend>
+/** Три обещания: маркетинговое, денежное и про удержание клиента. */
+export function PromisesScreen() {
+  const { next } = useNav();
 
-        <ScenePanel
-          asset="landing-assembly-line.webp"
-          alt="Пять рабочих станций сборочной линии, соединённых одним светящимся маршрутом"
-          className="mt-3 aspect-[4/5]"
-        >
-          <div className="flex h-full items-end p-3">
-            <ol className="w-full border border-neon/40 bg-scene-deep/88 px-3 py-2 backdrop-blur-[2px]">
-              {assemblyLine.chain.map((part, i) => (
-                <li key={part} className="flex items-center gap-3 py-1.5">
-                  <span className="font-mono text-small text-neon">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  <span className="font-display text-base font-semibold uppercase tracking-wide text-ink">
-                    {part}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </ScenePanel>
+  return (
+    <Screen className="min-h-dvh justify-between gap-8">
+      <div className="pt-8">
+        <Legend className="text-hazard">{promisesScreen.legend}</Legend>
+        <h1 className="mt-3 font-display text-title font-bold uppercase leading-tight">
+          {promisesScreen.title}
+        </h1>
+        <p className="mt-3 text-base text-ink-dim">{promisesScreen.lead}</p>
 
-        <div className="mt-5 bg-neon px-4 py-4 text-center text-on-neon">
-          <p className="font-display text-2xl font-bold uppercase leading-none tracking-tight">
-            {assemblyLine.assembled}
-          </p>
-          <p className="legend mt-1.5 opacity-70">{assemblyLine.assembledCaption}</p>
+        <div className="mt-6 space-y-2.5">
+          {experiment3.promises.map((p) => (
+            <MetalPanel key={p.code} className="p-4">
+              <div className="flex items-baseline gap-3">
+                <span className="font-mono text-small text-neon">{p.code}</span>
+                <Legend className="text-hazard">{p.kind}</Legend>
+              </div>
+              <p className="mt-2 text-base leading-relaxed text-ink">{p.text}</p>
+            </MetalPanel>
+          ))}
         </div>
       </div>
-    </ProtocolScreen>
+
+      <Button onClick={next}>{promisesScreen.cta}</Button>
+    </Screen>
+  );
+}
+
+/** Сборочная линия и отчёт системы: связка собрана. */
+export function AssemblyScreen() {
+  const { next } = useNav();
+
+  return (
+    <Screen className="gap-6 py-7">
+      <div>
+        <Legend className="text-neon">{assemblyLine.legend}</Legend>
+        <h1 className="mt-2 font-display text-title font-bold uppercase leading-tight">
+          {assemblyScreen.title}
+        </h1>
+        <div className="mt-3 space-y-3">
+          {assemblyScreen.blocks.map((line) => (
+            <p key={line} className="text-base text-ink-dim">
+              {line}
+            </p>
+          ))}
+        </div>
+      </div>
+
+      <ScenePanel
+        asset="landing-assembly-line.webp"
+        alt="Пять рабочих станций сборочной линии, соединённых одним светящимся маршрутом"
+        className="aspect-[4/5]"
+      >
+        <div className="flex h-full items-end p-3">
+          <ol className="w-full border border-neon/40 bg-scene-deep/88 px-3 py-2 backdrop-blur-[2px]">
+            {assemblyLine.chain.map((part, i) => (
+              <li key={part} className="flex items-center gap-3 py-1.5">
+                <span className="font-mono text-small text-neon">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span className="font-display text-base font-semibold uppercase tracking-wide text-ink">
+                  {part}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </ScenePanel>
+
+      <div className="bg-neon px-4 py-4 text-center text-on-neon">
+        <p className="font-display text-2xl font-bold uppercase leading-none tracking-tight">
+          {assemblyLine.assembled}
+        </p>
+        <p className="legend mt-1.5 opacity-70">{assemblyLine.assembledCaption}</p>
+      </div>
+
+      <Button onClick={next}>{assemblyLine.cta}</Button>
+    </Screen>
   );
 }
