@@ -80,7 +80,8 @@ describe('воронка при пустом окружении', () => {
 
     // Чат клиента: пропустить ленту и получить печать.
     press(chatSkip);
-    expect(screen.getByText(blameStamp.text)).toBeDefined();
+    // Печать обвиняет не «тебя», а профессию: роль стоит внутри фразы.
+    expect(screen.getByText(blameStamp.prefix)).toBeDefined();
     expect(screen.getByText(DISTRICT_COPY.direct.role)).toBeDefined();
     press(blameStamp.cta);
 

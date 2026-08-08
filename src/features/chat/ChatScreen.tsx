@@ -115,8 +115,8 @@ export function ChatScreen() {
         </Screen>
       )}
 
-      {/* Печать поверх всего экрана. Роль подставляется из района — без неё это
-          обвинение вообще, с ней обвинение тебе. */}
+      {/* Печать поверх всего экрана. Роль стоит внутри фразы: обвиняют не
+          человека вообще, а директолога, авитолога или таргетолога. */}
       {stamped && <BlameStamp role={districtCopy(district.id).role} onNext={next} />}
     </div>
   );
@@ -133,10 +133,17 @@ function BlameStamp({ role, onNext }: { role: string; onNext: () => void }) {
           )}
           style={{ transform: 'rotate(-7deg)' }}
         >
-          <p className="font-display text-hero font-bold uppercase leading-[0.94] tracking-tight text-alarm">
-            {blameStamp.text}
+          <p className="font-display text-title font-bold uppercase leading-[0.98] tracking-tight text-alarm">
+            {blameStamp.prefix}
           </p>
-          <p className="legend mt-3 border-t border-alarm/50 pt-3 text-alarm">{role}</p>
+          {/*
+            Роль крупнее самой фразы: она и есть удар. Кегль на ступень выше
+            префикса, но не hero — «ТАРГЕТОЛОГ» это десять знаков, и на узком
+            экране в рамке печати hero-кегль пришлось бы переносить.
+          */}
+          <p className="mt-1 font-display text-hero font-bold uppercase leading-[0.92] tracking-tight text-alarm">
+            {role}
+          </p>
         </div>
       </div>
 
