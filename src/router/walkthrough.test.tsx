@@ -246,7 +246,7 @@ describe('персонализация по районам', () => {
       expect(new Set(values).size, `поле ${field} одинаково у всех районов`).toBeGreaterThan(1);
     }
 
-    for (const field of ['home', 'chat', 'firstImpulse', 'catharsis'] as const) {
+    for (const field of ['home', 'chat', 'firstImpulse', 'catharsis', 'experiment1Opening'] as const) {
       const values = ids.map((id) => JSON.stringify(districtCopy(id)[field]));
       expect(new Set(values).size, `блок ${field} одинаков у районов`).toBe(ids.length);
     }

@@ -53,6 +53,67 @@ const SCENE_ART: Partial<Record<StepKey, SceneArt>> = {
   offer: { file: 'own-line-kit.webp', opacity: 0.48, position: 'center top' },
 };
 
+/**
+ * КАК ЭКРАН ПОЯВЛЯЕТСЯ.
+ *
+ * Один общий переход на все тридцать шагов делал воронку ровной: карта,
+ * распечатка и крупное утверждение въезжали одинаково, и ни один из них не
+ * читался как событие. Здесь переход выбирается по СМЫСЛУ экрана, а не по
+ * акту.
+ *
+ * `rise`     — распечатку кладут на стол: длиннее и снизу.
+ * `pullback` — камера отъезжает: только на экранах карты, там это буквально
+ *              то, что происходит с масштабом.
+ * `slam`     — крупное утверждение приходит ударом: короткий наезд с
+ *              перелётом. Только там, где на экране одна большая мысль.
+ * `none`     — мессенджер не анимируется вообще: это другое приложение, и
+ *              любой переход выдал бы в нём декорацию (docs/SPEC.md §3.3).
+ * `default`  — всё остальное.
+ */
+type Enter = 'default' | 'rise' | 'pullback' | 'slam' | 'none';
+
+const STEP_ENTER: Partial<Record<StepKey, Enter>> = {
+  chat: 'none',
+
+  zoomout: 'pullback',
+  map1: 'pullback',
+  map2: 'pullback',
+  mapfinal: 'pullback',
+
+  long1: 'rise',
+  situation: 'rise',
+  long2: 'rise',
+  long3: 'rise',
+  long4: 'rise',
+  video1: 'rise',
+  video1end: 'rise',
+  video2: 'rise',
+  video3: 'rise',
+
+  epiphany: 'slam',
+  money: 'slam',
+  exit: 'slam',
+  catharsis: 'slam',
+  lab: 'slam',
+};
+
+const ENTER_MOTION: Record<
+  Enter,
+  { initial: Record<string, number>; transition: Record<string, unknown> }
+> = {
+  default: { initial: { opacity: 0, y: 10 }, transition: { duration: 0.24, ease: [0.16, 1, 0.3, 1] } },
+  rise: { initial: { opacity: 0, y: 26 }, transition: { duration: 0.38, ease: [0.16, 1, 0.3, 1] } },
+  pullback: {
+    initial: { opacity: 0, scale: 1.05 },
+    transition: { duration: 0.46, ease: [0.16, 1, 0.3, 1] },
+  },
+  slam: {
+    initial: { opacity: 0, scale: 0.94 },
+    transition: { type: 'spring', stiffness: 460, damping: 24, mass: 0.7 },
+  },
+  none: { initial: { opacity: 1 }, transition: { duration: 0 } },
+};
+
 function worldAsset(file: string): string {
   return `${import.meta.env.BASE_URL}world/${file}`;
 }
@@ -77,6 +138,7 @@ export function CityStage({
   className?: string;
 }) {
   const art = SCENE_ART[step];
+  const enter = ENTER_MOTION[STEP_ENTER[step] ?? 'default'];
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -123,9 +185,9 @@ export function CityStage({
       <motion.main
         key={step}
         className="relative z-10"
-        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.16, 1, 0.3, 1] }}
+        initial={reduceMotion ? false : enter.initial}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={reduceMotion ? { duration: 0 } : enter.transition}
       >
         {children}
       </motion.main>

@@ -2,7 +2,7 @@ import { assemblyLine } from '@/content/lab';
 import { districtCopy } from '@/content/districts';
 import { experiment3 } from '@/content/finale';
 import { FALLBACK_DISTRICT, districtById } from '@/world';
-import type { VideoContent } from '@/content/types';
+import type { Block, VideoContent } from '@/content/types';
 import { video1, video1Outro, video2, video3 } from '@/content/videos';
 import { useNav } from '@/router/useNav';
 import { useFunnel } from '@/store/funnel';
@@ -26,6 +26,7 @@ import { VideoFrame } from './VideoFrame';
  */
 function ProtocolScreen({
   content,
+  blocks,
   title,
   standfirst,
   children,
@@ -33,6 +34,8 @@ function ProtocolScreen({
   onNext,
 }: {
   content: VideoContent;
+  /** Блоки целиком, если экран собирает их сам (начало района + общий хвост). */
+  blocks?: Block[];
   /** Заголовок из района, если он у района свой. */
   title?: string;
   /** Подзаголовок из района. У Авито это не клик, а просмотр. */
@@ -54,7 +57,7 @@ function ProtocolScreen({
       </div>
 
       <Printout>
-        <Blocks blocks={content.blocks} />
+        <Blocks blocks={blocks ?? content.blocks} />
       </Printout>
 
       <VideoFrame content={content} />
@@ -75,6 +78,7 @@ export function Video1Screen() {
   return (
     <ProtocolScreen
       content={video1}
+      blocks={[...districtCopy(district.id).experiment1Opening, ...video1.blocks]}
       standfirst={districtCopy(district.id).experiment1Subtitle}
       onNext={next}
     />
