@@ -18,7 +18,8 @@ import { VideoFrame } from './VideoFrame';
 /**
  * Экраны протоколов — они же три видео.
  *
- * Смысл фрагмента лежит на распечатке ПОД слотом записи, а не вместо неё.
+ * Сначала человек получает смысловую подводку на распечатке, затем видит
+ * запись протокола. Так плеер продолжает аргумент, а не опережает его.
  * Человек, который не может включить звук, обязан пройти воронку и всё равно
  * получить смену картины мира (docs/SPEC.md §3.5).
  */
@@ -45,11 +46,11 @@ function ProtocolScreen({
         <p className="mt-1.5 text-small text-ink-dim">{content.standfirst}</p>
       </div>
 
-      <VideoFrame content={content} />
-
       <Printout>
         <Blocks blocks={content.blocks} />
       </Printout>
+
+      <VideoFrame content={content} />
 
       {children}
 
