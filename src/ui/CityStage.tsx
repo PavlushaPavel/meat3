@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
 import { nextStep, type ActId, type StepKey } from '@/router/flow';
 import { cn } from '@/lib/cn';
 
@@ -110,18 +110,35 @@ export function CityStage({
       <div className="stage-grain" aria-hidden="true" />
       <div className="stage-vignette" aria-hidden="true" />
       <AnimatePresence initial={false}>
-        <motion.main
-          key={step}
-          className="relative z-10"
-          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.16, 1, 0.3, 1] }}
-        >
+        <StepFrame key={step} reduceMotion={reduceMotion ?? false}>
           {children}
-        </motion.main>
+        </StepFrame>
       </AnimatePresence>
     </div>
+  );
+}
+
+function StepFrame({
+  children,
+  reduceMotion,
+}: {
+  children: ReactNode;
+  reduceMotion: boolean;
+}) {
+  const isPresent = useIsPresent();
+
+  return (
+    <motion.main
+      className="relative z-10"
+      aria-hidden={isPresent ? undefined : true}
+      style={{ pointerEvents: isPresent ? 'auto' : 'none' }}
+      initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.16, 1, 0.3, 1] }}
+    >
+      {children}
+    </motion.main>
   );
 }
 
