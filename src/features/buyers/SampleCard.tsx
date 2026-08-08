@@ -5,10 +5,9 @@ import { cn } from '@/lib/cn';
 /**
  * Карточка образца: один из пяти покупателей за одинаковым запросом.
  *
- * СЛОТ ПОД ФОТО (решение заказчика 08.08.2026). Портреты пока не сняты, поэтому
- * карточка обязана выглядеть законченной и БЕЗ фотографии: сверху стоит
- * трафаретная марка образца. Как только в `public/samples/01.jpg`…`05.jpg`
- * появятся файлы, они встанут фоном под марку без единой правки кода.
+ * Пять сгенерированных портретов лежат в `public/samples/01.webp`…`05.webp`.
+ * Карточка обязана оставаться законченной и БЕЗ фотографии: сверху остаётся
+ * трафаретная марка образца, а в центре появляется его номер.
  *
  * Отсутствующий файл не ломает экран и не оставляет битую иконку: `onError`
  * переводит карточку в состояние без фото — то же самое, что сейчас по
@@ -24,7 +23,7 @@ export function SampleCard({
   onSelect: () => void;
 }) {
   const [hasPhoto, setHasPhoto] = useState(true);
-  const src = `${import.meta.env.BASE_URL}samples/${buyer.code}.jpg`;
+  const src = `${import.meta.env.BASE_URL}samples/${buyer.code}.webp`;
 
   return (
     <button
@@ -43,7 +42,7 @@ export function SampleCard({
             alt=""
             loading="lazy"
             onError={() => setHasPhoto(false)}
-            className="absolute inset-0 size-full object-cover opacity-80 grayscale"
+            className="absolute inset-0 size-full object-cover opacity-90 saturate-[0.72] contrast-[1.06]"
           />
         )}
 

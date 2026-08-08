@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { cn } from '@/lib/cn';
 import type { StepKey } from '@/router/flow';
 import {
@@ -57,6 +58,11 @@ export function TownMap({
         'map-topo relative overflow-hidden rounded-panel border border-line p-3',
         className,
       )}
+      style={
+        {
+          '--town-map-art': `url("${import.meta.env.BASE_URL}world/traffic-town-map.webp")`,
+        } as CSSProperties
+      }
     >
       <MapHeader step={step} />
 
@@ -245,9 +251,8 @@ function LabMarker({ state }: { state: ZoneState }) {
 }
 
 /**
- * Знак зоны. Трафаретные пиктограммы на SVG — растровых ассетов в проекте нет
- * (docs/SPEC.md §5.6). У района вместо пиктограммы стоит буквенная марка его
- * источника: так плитка читается мгновенно и без логотипов площадок.
+ * Знак зоны. Пиктограммы остаются SVG поверх сгенерированной карты, чтобы
+ * состояния и выбранный район были живыми, а не запечёнными в картинку.
  */
 function ZoneGlyph({ id, district }: { id: ZoneId; district: District }) {
   if (id === 'district') {

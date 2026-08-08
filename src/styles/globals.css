@@ -80,10 +80,64 @@
    * МАТЕРИАЛ 1. НОЧЬ ГОРОДА
    * ------------------------------------------------------------------ */
 
+  /** Сгенерированная сценография: город, карта и помещения лаборатории. */
+  .stage-art {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-position: center;
+    background-size: cover;
+    opacity: 0.38;
+    transform: scale(1.015);
+    filter: saturate(0.72) contrast(1.08) brightness(0.72);
+  }
+
+  .stage-scrim {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(5, 7, 6, 0.48) 0%, rgba(5, 7, 6, 0.68) 44%, rgba(5, 7, 6, 0.96) 100%),
+      linear-gradient(90deg, rgba(5, 7, 6, 0.58), transparent 42%, rgba(5, 7, 6, 0.28));
+  }
+
+  [data-step='town'] .stage-art,
+  [data-step='exit'] .stage-art {
+    background-position: 58% center;
+    opacity: 0.82;
+    filter: saturate(0.74) contrast(1.08) brightness(0.8);
+  }
+
+  [data-step='town'] .stage-scrim {
+    background:
+      linear-gradient(180deg, rgba(4, 6, 5, 0.34) 0%, rgba(4, 6, 5, 0.18) 44%, rgba(4, 6, 5, 0.9) 100%),
+      linear-gradient(90deg, rgba(4, 6, 5, 0.78), rgba(4, 6, 5, 0.12) 72%);
+  }
+
+  [data-step='district'] .stage-art,
+  [data-step='zoomout'] .stage-art,
+  [data-step='map1'] .stage-art,
+  [data-step='map2'] .stage-art,
+  [data-step='mapfinal'] .stage-art {
+    opacity: 0.52;
+    filter: saturate(0.7) contrast(1.12) brightness(0.58);
+  }
+
+  [data-act='lab'] .stage-art {
+    opacity: 0.46;
+    background-position: center top;
+  }
+
+  [data-act='assembly'] .stage-art {
+    opacity: 0.4;
+    background-position: center top;
+    filter: saturate(0.62) contrast(1.12) brightness(0.62);
+  }
+
   /**
    * Зерно. Плёночная грязь поверх всей сцены — то, что отличает ночной город
-   * от плоской чёрной заливки. Генерируется фильтром, а не картинкой: растровых
-   * ассетов в проекте нет вообще (docs/SPEC.md §5.6).
+   * от плоской чёрной заливки. Генерируется фильтром поверх сценографии, чтобы
+   * одинаково связывать город, карту и помещения лаборатории.
    */
   .stage-grain {
     position: absolute;
@@ -126,6 +180,7 @@
   .map-topo {
     background-color: var(--color-scene-deep);
     background-image:
+      linear-gradient(rgba(4, 7, 5, 0.28), rgba(4, 7, 5, 0.72)),
       repeating-linear-gradient(
         0deg,
         color-mix(in oklab, var(--color-line) 60%, transparent) 0 1px,
@@ -140,7 +195,10 @@
         24deg,
         color-mix(in oklab, var(--color-line) 34%, transparent) 0 1px,
         transparent 1px 11px
-      );
+      ),
+      var(--town-map-art);
+    background-position: center;
+    background-size: auto, auto, auto, auto, cover;
   }
 
   /**

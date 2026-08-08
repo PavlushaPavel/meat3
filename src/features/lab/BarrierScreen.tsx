@@ -2,7 +2,7 @@ import { barrier } from '@/content/lab';
 import { useNav } from '@/router/useNav';
 import { Button } from '@/ui/Button';
 import { Screen } from '@/ui/CityStage';
-import { Lamp, MetalPanel } from '@/ui/MetalPanel';
+import { Lamp } from '@/ui/MetalPanel';
 import { Plate } from '@/ui/Plate';
 
 /**
@@ -19,8 +19,14 @@ export function BarrierScreen() {
     <Screen className="min-h-dvh justify-between gap-8">
       <div className="pt-8">
         {/* Дверь. */}
-        <MetalPanel rivets className="overflow-hidden">
-          <div className="flex flex-col items-center gap-4 px-5 py-8">
+        <div className="relative min-h-[52vh] overflow-hidden rounded-panel border border-line bg-scene-deep shadow-2xl">
+          <img
+            src={`${import.meta.env.BASE_URL}world/assembly-room.webp`}
+            alt=""
+            className="absolute inset-0 size-full object-cover object-top saturate-[0.72]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/30 to-black/95" />
+          <div className="relative flex min-h-[52vh] flex-col items-center justify-between gap-4 px-5 py-6">
             <Plate className="w-full">
               <p className="text-center font-display text-2xl font-bold uppercase leading-none tracking-tight">
                 {barrier.door}
@@ -30,7 +36,7 @@ export function BarrierScreen() {
 
             <Lamp tone="alarm" label={barrier.status} className="mt-2" />
           </div>
-        </MetalPanel>
+        </div>
 
         <div className="mt-7 space-y-3">
           {barrier.blocks.map((line) => (

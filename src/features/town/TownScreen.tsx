@@ -1,7 +1,6 @@
 import { townIntro } from '@/content/town';
 import { useNav } from '@/router/useNav';
 import { Button } from '@/ui/Button';
-import { CitySkyline } from '@/ui/CitySkyline';
 import { Screen } from '@/ui/CityStage';
 import { Legend, TapeStrip } from '@/ui/Plate';
 
@@ -38,7 +37,7 @@ export function TownScreen() {
       </div>
 
       <div>
-        <CitySkyline className="mb-6 opacity-90" />
+        <div className="h-[25vh] min-h-36" aria-hidden="true" />
         <Button onClick={next}>{townIntro.cta}</Button>
       </div>
     </Screen>

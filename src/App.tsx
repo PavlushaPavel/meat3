@@ -36,7 +36,7 @@ export default function App() {
   }, [step]);
 
   return (
-    <CityStage act={act}>
+    <CityStage act={act} step={step}>
       <Screen />
     </CityStage>
   );
