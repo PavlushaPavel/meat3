@@ -13,7 +13,6 @@ import { QUESTIONS_PER_RUN, quizBank } from '@/content/quizBanks';
 import { longread1, longread2, longread3, longread4 } from '@/content/longreads';
 import { checkout, offer } from '@/content/offer';
 import { quizIntro, quizPassed } from '@/content/quiz';
-import { situationPrompt, situationReply } from '@/content/situation';
 import { cityExit, districtChoice, map1, map2, mapFinal, townIntro, zoomOut } from '@/content/town';
 import { video1, video1Outro, video2, video3, videoEmptyLabel } from '@/content/videos';
 import { STEPS } from '@/router/flow';
@@ -86,10 +85,6 @@ describe('воронка при пустом окружении', () => {
     press(blameStamp.cta);
 
     press(longread1.next);
-
-    // Ситуация: ничего не выбираем — кнопка обязана работать и так.
-    press(situationPrompt.skip);
-    press(situationReply.cta);
 
     // Отдаление карты: здесь же проступает лаборатория и звучит хорошая новость.
     expect(screen.getByText(zoomOut.goodNews[0])).toBeDefined();

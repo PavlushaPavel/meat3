@@ -47,12 +47,6 @@ export interface ChatMessage {
   big?: boolean;
 }
 
-/** Вариант множественного выбора. Ответ ни на что не влияет — он нужен человеку. */
-export interface SituationOption {
-  id: string;
-  text: string;
-}
-
 /** Один из пяти образцов: покупатель ремонта за одним и тем же запросом. */
 export interface Buyer {
   id: string;

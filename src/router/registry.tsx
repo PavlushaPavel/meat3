@@ -15,7 +15,6 @@ import {
 } from '@/features/town/MapScreens';
 import { ChatScreen } from '@/features/chat/ChatScreen';
 import { LongreadScreen } from '@/features/longread/LongreadScreen';
-import { SituationScreen } from '@/features/situation/SituationScreen';
 import { LabScreen } from '@/features/lab/LabScreen';
 import {
   EpiphanyScreen,
@@ -55,7 +54,6 @@ export const SCREENS: Record<StepKey, () => ReactElement> = {
   chat: () => <ChatScreen />,
   // Единственный лонгрид со своим экраном: первый абзац принадлежит району.
   long1: () => <Long1Screen />,
-  situation: () => <SituationScreen />,
   zoomout: () => <ZoomOutScreen />,
 
   // Акт II. Лаборатория.

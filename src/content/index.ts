@@ -5,7 +5,6 @@
 export * from './types';
 export * from './town';
 export * from './chat';
-export * from './situation';
 export * from './longreads';
 export * from './lab';
 export * from './buyers';

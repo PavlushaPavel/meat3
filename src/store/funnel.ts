@@ -30,8 +30,6 @@ interface FunnelState {
   district: DistrictId | null;
   /** Открытые инструменты. */
   tools: ToolId[];
-  /** Что человек отметил в выборе ситуации. Ни на что не влияет — это честно. */
-  situation: string[];
   /** На какой образец поставил бюджет клиента. */
   buyer: string | null;
 
@@ -49,7 +47,6 @@ interface FunnelState {
   goTo: (step: StepKey) => void;
   chooseDistrict: (id: DistrictId) => void;
   unlock: (tool: ToolId) => void;
-  toggleSituation: (id: string) => void;
   chooseBuyer: (id: string) => void;
 
   startQuiz: () => void;
@@ -77,7 +74,6 @@ const initial = {
   step: STEPS[0],
   district: null as DistrictId | null,
   tools: [] as ToolId[],
-  situation: [] as string[],
   buyer: null as string | null,
   lives: LIVES,
   order: [] as number[],
@@ -97,13 +93,6 @@ export const useFunnel = create<FunnelState>()(
 
       unlock: (tool) =>
         set((s) => (s.tools.includes(tool) ? s : { tools: [...s.tools, tool] })),
-
-      toggleSituation: (id) =>
-        set((s) => ({
-          situation: s.situation.includes(id)
-            ? s.situation.filter((x) => x !== id)
-            : [...s.situation, id],
-        })),
 
       chooseBuyer: (id) => set({ buyer: id }),
 
@@ -152,7 +141,6 @@ export const useFunnel = create<FunnelState>()(
         step: s.step,
         district: s.district,
         tools: s.tools,
-        situation: s.situation,
         buyer: s.buyer,
       }),
       /**

@@ -20,11 +20,9 @@ const SCENE_ART: Partial<Record<StepKey, SceneArt>> = {
   district: { file: 'district-crossroads.webp', opacity: 0.72, position: 'center 44%' },
   // Свой район: тот же перекрёсток, но камера уже приблизилась — светлее и ближе.
   home: { file: 'district-crossroads.webp', opacity: 0.5, position: 'center 62%' },
-  // Акт города: человек ещё НЕ в лаборатории. Здесь стояли лабораторные
-  // интерьеры — это была не только скука от повтора, но и ошибка по месту
-  // действия: `long1` и `situation` идут до входа в Traffic Lab.
+  // Акт города: человек ещё НЕ в лаборатории. Здесь стоял лабораторный
+  // интерьер — ошибка по месту действия: `long1` идёт до входа в Traffic Lab.
   long1: { file: 'traffic-town-hero.webp', opacity: 0.26, position: '58% center' },
-  situation: { file: 'district-crossroads.webp', opacity: 0.3, position: 'center 44%' },
   zoomout: { file: 'traffic-town-map.webp', opacity: 0.54 },
   lab: { file: 'formula-hall.webp', opacity: 0.5, position: 'center top' },
   video1: { file: 'evidence-bay.webp', opacity: 0.34, position: 'center top' },
@@ -83,7 +81,6 @@ const STEP_ENTER: Partial<Record<StepKey, Enter>> = {
   mapfinal: 'pullback',
 
   long1: 'rise',
-  situation: 'rise',
   long2: 'rise',
   long3: 'rise',
   long4: 'rise',
