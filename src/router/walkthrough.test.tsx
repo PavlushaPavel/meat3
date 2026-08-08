@@ -1,14 +1,17 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '@/App';
 import { buyers, buyersPrompt, sampleQuery } from '@/content/buyers';
-import { chatAfter, chatSkip } from '@/content/chat';
+import { blameStamp, chatSkip } from '@/content/chat';
+import { DISTRICT_COPY, districtCopy } from '@/content/districts';
+import { homeDistrict } from '@/content/town';
+import { DISTRICTS, type DistrictId } from '@/world';
 import { barrier, labEntry, wallAudience, assemblyLine } from '@/content/lab';
 import { longread1, longread2, longread3, longread4 } from '@/content/longreads';
 import { checkout, offer } from '@/content/offer';
 import { quizIntro, quizPassed, quizQuestions } from '@/content/quiz';
 import { situationPrompt, situationReply } from '@/content/situation';
-import { cityExit, districtChoice, map1, map2, mapFinal, positiveTurn, townIntro, zoomOut } from '@/content/town';
+import { cityExit, districtChoice, map1, map2, mapFinal, townIntro, zoomOut } from '@/content/town';
 import { video1, video1Outro, video2, videoEmptyLabel } from '@/content/videos';
 import { STEPS } from '@/router/flow';
 import { useFunnel } from '@/store/funnel';
@@ -44,23 +47,31 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('воронка при пустом окружении', () => {
-  it('проходится целиком: от ночного города до оффера', () => {
+  it('проходится целиком: от ночного города до оффера', async () => {
     render(<App />);
 
     // --- Акт I. Город ---
     expect(screen.getByText('TOWN')).toBeDefined();
     press(townIntro.cta);
 
-    // Район: выбрать плитку, подтвердить, прочитать ответ.
+    // Район: выбрать плитку и подтвердить.
     press(/DIRECT DISTRICT/);
-    press(/Это мой район/);
-    expect(screen.getByText(districtChoice.reply.lead)).toBeDefined();
-    press(districtChoice.reply.cta);
+    press(districtChoice.cta);
 
-    // Чат клиента: пропустить анимацию и согласиться.
+    // Свой район: инструменты на его языке, потом стук в дверь. Кнопка до
+    // стука неактивна — ждём, как ждал бы человек.
+    expect(screen.getByText(DISTRICT_COPY.direct.home.tools[0])).toBeDefined();
+    await waitFor(
+      () => expect(screen.getByText(homeDistrict.knock.mark)).toBeDefined(),
+      { timeout: 4000 },
+    );
+    press(homeDistrict.knock.cta);
+
+    // Чат клиента: пропустить ленту и получить печать.
     press(chatSkip);
-    expect(screen.getByText('Короче, во всём виноват ты.')).toBeDefined();
-    press(chatAfter.cta);
+    expect(screen.getByText(blameStamp.text)).toBeDefined();
+    expect(screen.getByText(DISTRICT_COPY.direct.role)).toBeDefined();
+    press(blameStamp.cta);
 
     press(longread1.next);
 
@@ -68,8 +79,9 @@ describe('воронка при пустом окружении', () => {
     press(situationPrompt.skip);
     press(situationReply.cta);
 
+    // Отдаление карты: здесь же проступает лаборатория и звучит хорошая новость.
+    expect(screen.getByText(zoomOut.goodNews[0])).toBeDefined();
     press(zoomOut.cta);
-    press(positiveTurn.cta);
 
     // --- Акт II. Лаборатория ---
     expect(screen.getByText(labEntry.lead)).toBeDefined();
@@ -173,6 +185,56 @@ describe('провал контроля качества', () => {
     expect(useFunnel.getState().step).toBe('quiz');
     expect(useFunnel.getState().lives).toBe(5);
   });
+});
+
+/**
+ * ГЛАВНОЕ ОБЕЩАНИЕ НОВОЙ СТРУКТУРЫ: воронка говорит с человеком на языке его
+ * района. Если персонализация где-то отвалится, человек получит «очередной курс
+ * про маркетинг для всех» — ровно то, чего продукт обещал избежать.
+ *
+ * Проверяется не наличие текста вообще, а то, что у трёх районов он РАЗНЫЙ и
+ * что каждый видит именно свой. Тест на «текст непустой» прошёл бы и на
+ * сломанной подстановке, отдав всем один и тот же район.
+ */
+describe('персонализация по районам', () => {
+  it('у каждого района свой язык: инструменты, чат, роль и финал не совпадают', () => {
+    const ids = DISTRICTS.map((d) => d.id);
+
+    for (const field of ['role', 'experiment1Subtitle', 'experiment2Title'] as const) {
+      const values = ids.map((id) => districtCopy(id)[field]);
+      // Директ и VK сознательно делят заголовок второго эксперимента (у обоих
+      // клик), поэтому требуем не «все разные», а «не все одинаковые».
+      expect(new Set(values).size, `поле ${field} одинаково у всех районов`).toBeGreaterThan(1);
+    }
+
+    for (const field of ['home', 'chat', 'firstImpulse', 'catharsis'] as const) {
+      const values = ids.map((id) => JSON.stringify(districtCopy(id)[field]));
+      expect(new Set(values).size, `блок ${field} одинаков у районов`).toBe(ids.length);
+    }
+  });
+
+  it.each(DISTRICTS.map((d) => d.id))(
+    'район %s получает свой чат и свою роль в печати',
+    async (id: DistrictId) => {
+      useFunnel.setState({ step: 'chat', district: id });
+      render(<App />);
+
+      const copy = districtCopy(id);
+
+      // Первое сообщение клиента — именно этого района.
+      await waitFor(() => expect(screen.getByText(copy.chat[0].text)).toBeDefined(), {
+        timeout: 3000,
+      });
+
+      press(chatSkip);
+      expect(screen.getByText(copy.role)).toBeDefined();
+
+      // И роли чужих районов на экране нет.
+      for (const other of DISTRICTS.filter((d) => d.id !== id)) {
+        expect(screen.queryByText(districtCopy(other.id).role)).toBeNull();
+      }
+    },
+  );
 });
 
 describe('честные заглушки', () => {

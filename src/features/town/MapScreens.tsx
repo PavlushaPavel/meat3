@@ -4,7 +4,7 @@ import { useNav } from '@/router/useNav';
 import { useFunnel } from '@/store/funnel';
 import { FALLBACK_DISTRICT, districtById } from '@/world';
 import { Button } from '@/ui/Button';
-import { Screen } from '@/ui/CityStage';
+import { ScenePanel, Screen } from '@/ui/CityStage';
 import { TownMap } from '@/ui/TownMap';
 import { Legend } from '@/ui/Plate';
 
@@ -51,7 +51,14 @@ function MapLayout({
   );
 }
 
-/** Шаг 6. Карта отдаляется: вокруг проступают безымянные территории. */
+/**
+ * Шаг 7. Карта отдаляется, и за пределами района проступает лаборатория.
+ *
+ * Сюда вошёл прежний отдельный экран «позитивного поворота»: хорошая новость
+ * про то, что для этого не нужно три года учиться на маркетолога, обязана
+ * прозвучать ДО того, как человек увидит дверь. Иначе вход в лабораторию
+ * читается как приглашение на очередной курс (docs/SPEC.md §4.6).
+ */
 export function ZoomOutScreen() {
   const { next } = useNav();
 
@@ -62,9 +69,31 @@ export function ZoomOutScreen() {
           {line}
         </p>
       ))}
-      <p className="pt-1 font-display text-lead font-semibold uppercase leading-snug text-ink">
-        {zoomOut.closing}
-      </p>
+
+      <div className="border-l-2 border-neon/50 pl-4">
+        {zoomOut.goodNews.map((line) => (
+          <p key={line} className="mt-2 text-base text-ink first:mt-0">
+            {line}
+          </p>
+        ))}
+      </div>
+
+      {/* Здание за пределами района. */}
+      <ScenePanel
+        asset="traffic-lab-exterior.webp"
+        alt="Ворота промзоны Traffic Lab: жёлтая вывеска, знак опасности, свет изнутри"
+        className="mt-2 aspect-[4/5]"
+        imageClassName="object-[50%_58%]"
+      >
+        <div className="flex h-full items-end p-4">
+          <div className="w-full border border-hazard/60 bg-scene-deep/88 px-4 py-3 backdrop-blur-[2px]">
+            <p className="font-display text-2xl font-bold uppercase leading-none tracking-tight text-hazard">
+              {zoomOut.lab.name}
+            </p>
+            <p className="mt-2 text-small text-ink">{zoomOut.lab.caption}</p>
+          </div>
+        </div>
+      </ScenePanel>
     </MapLayout>
   );
 }
@@ -144,7 +173,16 @@ export function MapFinalScreen() {
       <p className="pt-2 font-display text-lead font-semibold uppercase leading-snug text-ink">
         {mapFinal.lead}
       </p>
-      <p className="text-base text-ink-dim">{mapFinal.after}</p>
+      <ul className="space-y-2">
+        {mapFinal.ways.map((way) => (
+          <li key={way} className="flex gap-3 text-base text-ink">
+            <span aria-hidden="true" className="text-neon">
+              ▸
+            </span>
+            {way}
+          </li>
+        ))}
+      </ul>
     </MapLayout>
   );
 }

@@ -18,14 +18,20 @@ type SceneArt = {
 const SCENE_ART: Partial<Record<StepKey, SceneArt>> = {
   town: { file: 'traffic-town-hero.webp', opacity: 0.86, position: '58% center' },
   district: { file: 'district-crossroads.webp', opacity: 0.72, position: 'center 44%' },
-  long1: { file: 'evidence-bay.webp', opacity: 0.3, position: 'center top' },
-  situation: { file: 'evidence-bay.webp', opacity: 0.4, position: 'center top' },
+  // Свой район: тот же перекрёсток, но камера уже приблизилась — светлее и ближе.
+  home: { file: 'district-crossroads.webp', opacity: 0.5, position: 'center 62%' },
+  // Акт города: человек ещё НЕ в лаборатории. Здесь стояли лабораторные
+  // интерьеры — это была не только скука от повтора, но и ошибка по месту
+  // действия: `long1` и `situation` идут до входа в Traffic Lab.
+  long1: { file: 'traffic-town-hero.webp', opacity: 0.26, position: '58% center' },
+  situation: { file: 'district-crossroads.webp', opacity: 0.3, position: 'center 44%' },
   zoomout: { file: 'traffic-town-map.webp', opacity: 0.54 },
-  turn: { file: 'traffic-lab-exterior.webp', opacity: 0.7, position: 'center 58%' },
   lab: { file: 'formula-hall.webp', opacity: 0.5, position: 'center top' },
   video1: { file: 'evidence-bay.webp', opacity: 0.34, position: 'center top' },
   buyers: { file: 'formula-hall.webp', opacity: 0.3, position: 'center top' },
-  video1end: { file: 'evidence-bay.webp', opacity: 0.3, position: 'center top' },
+  // Второй интерьер лаборатории. До 08.08.2026 файл лежал в сборке
+  // неиспользованным, а `evidence-bay` при этом стоял на пяти шагах подряд.
+  video1end: { file: 'traffic-lab-interior.webp', opacity: 0.32, position: 'center top' },
   wall1: { file: 'evidence-bay.webp', opacity: 0.48, position: 'center top' },
   map1: { file: 'traffic-town-map.webp', opacity: 0.54 },
   long2: { file: 'offer-workbench.webp', opacity: 0.28, position: 'center top' },

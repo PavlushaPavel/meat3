@@ -1,10 +1,11 @@
 import type { ReactElement } from 'react';
-import { longread1, longread2, longread3, longread4 } from '@/content/longreads';
+import { longread2, longread3, longread4 } from '@/content/longreads';
+import { Long1Screen } from '@/features/longread/Long1Screen';
 import type { StepKey } from './flow';
 
 import { TownScreen } from '@/features/town/TownScreen';
 import { DistrictScreen } from '@/features/town/DistrictScreen';
-import { TurnScreen } from '@/features/town/TurnScreen';
+import { HomeScreen } from '@/features/town/HomeScreen';
 import { ExitScreen } from '@/features/town/ExitScreen';
 import {
   Map1Screen,
@@ -41,11 +42,12 @@ export const SCREENS: Record<StepKey, () => ReactElement> = {
   // Акт I. Город.
   town: () => <TownScreen />,
   district: () => <DistrictScreen />,
+  home: () => <HomeScreen />,
   chat: () => <ChatScreen />,
-  long1: () => <LongreadScreen content={longread1} />,
+  // Единственный лонгрид со своим экраном: первый абзац принадлежит району.
+  long1: () => <Long1Screen />,
   situation: () => <SituationScreen />,
   zoomout: () => <ZoomOutScreen />,
-  turn: () => <TurnScreen />,
 
   // Акт II. Лаборатория.
   lab: () => <LabScreen />,

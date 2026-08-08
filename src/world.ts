@@ -187,8 +187,8 @@ const ZONE_SCHEDULE: Record<ZoneId, { shapeAt: StepKey | null; knownAt: StepKey 
   // Отдел продаж получает имя рано и не открывается никогда — см. выше.
   sales: { shapeAt: 'zoomout', knownAt: 'zoomout', openAt: null },
 
-  // Промзона: появляется на повороте, открывается входом в лабораторию.
-  trafficLab: { shapeAt: 'turn', knownAt: 'turn', openAt: 'lab' },
+  // Промзона: проступает, когда карта отдаляется, открывается входом внутрь.
+  trafficLab: { shapeAt: 'zoomout', knownAt: 'zoomout', openAt: 'lab' },
 };
 
 /** Достигнут ли шаг `mark` к моменту `step`. `null` — никогда не достигнут. */

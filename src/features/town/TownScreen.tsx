@@ -7,10 +7,13 @@ import { Legend, TapeStrip } from '@/ui/Plate';
 /**
  * Шаг 1. Первый экран приложения: ночной Traffic Town.
  *
- * ЗАДАЧА ЭКРАНА — не объяснить продукт, а поставить рамку: это город, у каждого
- * здесь свой кусок, и виноват всегда один и тот же человек. Карты тут ещё нет:
- * человек не выбрал район, показывать ему нечего, а пустая карта в тумане
- * выглядела бы как незагрузившийся экран (docs/SPEC.md §3.1).
+ * ПЕРВЫМ ЭКРАНОМ НЕ БОЛЬ, А ОБЕЩАНИЕ МИРА (структура заказчика 08.08.2026).
+ * Раньше воронка открывалась обвинением; теперь она открывается вопросом, на
+ * который человек сам хочет ответ: почему один специалист ведёт три-пять
+ * клиентов годами, а другой каждый месяц оправдывается. Боль переехала на
+ * четвёртый экран, где у неё появилась ставка — потеря клиента и денег.
+ *
+ * Карты здесь нет: район ещё не выбран, показывать нечего (docs/SPEC.md §3.1).
  */
 export function TownScreen() {
   const { next } = useNav();
@@ -27,19 +30,29 @@ export function TownScreen() {
 
         <TapeStrip className="mt-5 max-w-40" />
 
-        <div className="mt-6 space-y-3">
-          {townIntro.lines.map((line) => (
-            <p key={line} className="max-w-[34ch] text-lead leading-snug text-ink-dim">
+        <p className="mt-6 text-lead leading-snug text-ink">{townIntro.welcome}</p>
+
+        <div className="mt-4 space-y-3">
+          {townIntro.blocks.map((line) => (
+            <p key={line} className="text-base text-ink-dim">
               {line}
             </p>
           ))}
         </div>
+
+        {/* Отказ проговаривается вслух — это часть обещания, а не оговорка. */}
+        <p className="mt-6 border-l-2 border-line pl-4 text-base text-ink-dim">
+          {townIntro.not}
+        </p>
+
+        <p className="mt-6 text-base text-ink">{townIntro.lead}</p>
+        <p className="mt-3 font-display text-lead font-semibold uppercase leading-snug text-neon">
+          {townIntro.promise}
+        </p>
+        <p className="mt-5 text-base text-ink-dim">{townIntro.closing}</p>
       </div>
 
-      <div>
-        <div className="h-[25vh] min-h-36" aria-hidden="true" />
-        <Button onClick={next}>{townIntro.cta}</Button>
-      </div>
+      <Button onClick={next}>{townIntro.cta}</Button>
     </Screen>
   );
 }
