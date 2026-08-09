@@ -9,6 +9,8 @@ import { Button } from '@/ui/Button';
 import { Screen } from '@/ui/CityStage';
 import { MetalPanel } from '@/ui/MetalPanel';
 import { Legend } from '@/ui/Plate';
+import { AuthorLine, AuthorNote } from '@/ui/AuthorNote';
+import { author } from '@/content/author';
 import { haptics } from '@/lib/telegram';
 import { cn } from '@/lib/cn';
 import { SampleCard } from './SampleCard';
@@ -128,6 +130,10 @@ function SegmentsInteractive({ content }: { content: SegmentChoice }) {
             />
           ))}
         </div>
+
+        <AuthorNote className="mt-6">
+          <AuthorLine>{author.samples}</AuthorLine>
+        </AuthorNote>
 
         <MetalPanel className="mt-6 p-5">
           <p className="font-display text-lead font-semibold uppercase leading-snug">

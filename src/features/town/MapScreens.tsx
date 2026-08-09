@@ -7,6 +7,8 @@ import { Button } from '@/ui/Button';
 import { ScenePanel, Screen } from '@/ui/CityStage';
 import { TownMap } from '@/ui/TownMap';
 import { Legend } from '@/ui/Plate';
+import { AuthorLine, AuthorNote } from '@/ui/AuthorNote';
+import { author } from '@/content/author';
 
 /**
  * Экраны карты: шаги `zoomout`, `map1`, `map2`, `mapfinal`.
@@ -77,6 +79,12 @@ export function ZoomOutScreen() {
           </p>
         ))}
       </div>
+
+      {/* Без этой границы хорошая новость читается как «нейросеть сделает всё
+          сама» — и тогда непонятно, зачем разбираться в аудитории. */}
+      <AuthorNote>
+        <AuthorLine>{author.aiLimit}</AuthorLine>
+      </AuthorNote>
 
       {/* Здание за пределами района. */}
       <ScenePanel

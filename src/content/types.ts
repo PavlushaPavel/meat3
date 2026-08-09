@@ -112,6 +112,7 @@ export interface ExternalAction {
   envVar:
     | 'VITE_ASSISTANT_AUDIENCE_URL'
     | 'VITE_ASSISTANT_OFFER_URL'
+    | 'VITE_LANDING_DEMO_URL'
     | 'VITE_CHECKOUT_URL'
     | 'VITE_SUPPORT_URL';
 }

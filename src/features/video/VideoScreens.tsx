@@ -1,6 +1,6 @@
 import { assemblyLine } from '@/content/lab';
 import { districtCopy } from '@/content/districts';
-import { assemblyScreen, experiment3, promisesScreen } from '@/content/finale';
+import { assemblyScreen, experiment3, landingDemo, promisesScreen } from '@/content/finale';
 import { FALLBACK_DISTRICT, districtById } from '@/world';
 import type { Block, VideoContent } from '@/content/types';
 import { video1, video1Outro, video2, video3 } from '@/content/videos';
@@ -11,6 +11,7 @@ import { Button } from '@/ui/Button';
 import { ScenePanel, Screen } from '@/ui/CityStage';
 import { MetalPanel } from '@/ui/MetalPanel';
 import { Legend } from '@/ui/Plate';
+import { ExternalButton } from '@/ui/ExternalButton';
 import { Printout } from '@/ui/Printout';
 import { useEffect, type ReactNode } from 'react';
 import { LAB_NAME } from '@/world';
@@ -245,6 +246,10 @@ export function AssemblyScreen() {
         </p>
         <p className="legend mt-1.5 opacity-70">{assemblyLine.assembledCaption}</p>
       </div>
+
+      {/* Собранная в уроке страница живьём: единственное доказательство, которое
+          воронке нужно, — по нему можно потыкать. */}
+      <ExternalButton action={landingDemo} />
 
       <Button onClick={next}>{assemblyLine.cta}</Button>
     </Screen>

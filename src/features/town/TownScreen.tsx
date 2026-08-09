@@ -3,6 +3,8 @@ import { useNav } from '@/router/useNav';
 import { Button } from '@/ui/Button';
 import { Screen } from '@/ui/CityStage';
 import { Legend, TapeStrip } from '@/ui/Plate';
+import { AuthorLine, AuthorNote } from '@/ui/AuthorNote';
+import { author } from '@/content/author';
 
 /**
  * Шаг 1. Первый экран приложения: ночной Traffic Town.
@@ -49,7 +51,15 @@ export function TownScreen() {
         <p className="mt-3 font-display text-lead font-semibold uppercase leading-snug text-neon">
           {townIntro.promise}
         </p>
-        <p className="mt-5 text-base text-ink-dim">{townIntro.closing}</p>
+        {/* Кто говорит. Три строки: дальше человеку тридцать экранов слушать
+            этот голос, и он вправе знать, чей он. */}
+        <AuthorNote className="mt-7">
+          {author.intro.map((line) => (
+            <AuthorLine key={line}>{line}</AuthorLine>
+          ))}
+        </AuthorNote>
+
+        <p className="mt-7 text-base text-ink-dim">{townIntro.closing}</p>
       </div>
 
       <Button onClick={next}>{townIntro.cta}</Button>

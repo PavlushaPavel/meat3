@@ -8,14 +8,15 @@ import { homeDistrict } from '@/content/town';
 import { DISTRICTS, type DistrictId } from '@/world';
 import { barrier, labEntry, assemblyLine } from '@/content/lab';
 import { EXPERIMENT1, epiphany, experiment2Choice, formulas, moneyBridge, toolGranted } from '@/content/experiments';
-import { catharsisIntro, catharsisLabels, promisesScreen } from '@/content/finale';
+import { catharsisIntro, catharsisLabels, landingDemo, promisesScreen } from '@/content/finale';
+import { author } from '@/content/author';
 import { QUESTIONS_PER_RUN, quizBank } from '@/content/quizBanks';
 import { longread1, longread2, longread3, longread4 } from '@/content/longreads';
 import { checkout, offer } from '@/content/offer';
 import { quizIntro, quizPassed } from '@/content/quiz';
 import { cityExit, districtChoice, map1, map2, mapFinal, townIntro, zoomOut } from '@/content/town';
 import { video1, video1Outro, video2, video3, videoEmptyLabel } from '@/content/videos';
-import { STEPS } from '@/router/flow';
+import { STEPS, type StepKey } from '@/router/flow';
 import { useFunnel } from '@/store/funnel';
 
 /**
@@ -328,6 +329,36 @@ describe('три разных интерактива', () => {
   });
 });
 
+describe('автор', () => {
+  /**
+   * Шесть касаний — не украшение. Если реплика пропадёт, воронка снова станет
+   * голосом без лица, а денежный мост потеряет единственное подтверждение
+   * реальными чеками.
+   */
+  const TOUCHPOINTS: Array<[StepKey, string]> = [
+    ['town', author.intro[0]],
+    ['zoomout', author.aiLimit],
+    ['buyers', author.samples],
+    ['epiphany', author.epiphany[0]],
+    ['money', author.money[0]],
+    ['offer', author.sign],
+  ];
+
+  it.each(TOUCHPOINTS)('на шаге %s автор говорит', (step, line) => {
+    useFunnel.setState({ step, district: 'direct' });
+    render(<App />);
+
+    expect(screen.getByText(line)).toBeDefined();
+  });
+
+  it('подпись автора одна на все реплики — иначе он не складывается в человека', () => {
+    useFunnel.setState({ step: 'money', district: 'direct' });
+    render(<App />);
+
+    expect(screen.getAllByText(author.mark).length).toBeGreaterThan(0);
+  });
+});
+
 describe('панель отладки', () => {
   /**
    * Панель обязана быть невидимой для живого человека. Проверка не про
@@ -359,6 +390,14 @@ describe('панель отладки', () => {
 });
 
 describe('честные заглушки', () => {
+  it('страница из урока без ссылки не ведёт в никуда', () => {
+    useFunnel.setState({ step: 'assembly', district: 'direct' });
+    render(<App />);
+
+    expect(screen.getByText(landingDemo.pending)).toBeDefined();
+    expect(screen.queryByRole('button', { name: landingDemo.label })).toBeNull();
+  });
+
   it('во всех трёх протоколах слот записи сообщает, что материала нет', () => {
     for (const step of ['video1', 'video2', 'video3'] as const) {
       cleanup();

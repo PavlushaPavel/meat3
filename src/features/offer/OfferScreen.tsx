@@ -3,6 +3,7 @@ import { ScenePanel, Screen } from '@/ui/CityStage';
 import { ExternalButton } from '@/ui/ExternalButton';
 import { MetalPanel } from '@/ui/MetalPanel';
 import { Legend, Plate } from '@/ui/Plate';
+import { author } from '@/content/author';
 
 /**
  * Шаг 25. Продажа и финальная мысль. Последний экран воронки.
@@ -97,6 +98,9 @@ export function OfferScreen() {
         <p className="mt-5 font-display text-lead font-semibold uppercase leading-snug text-ink">
           {finalThought.closing}
         </p>
+
+        {/* Подпись. Последнее слово в воронке принадлежит человеку, а не миру. */}
+        <p className="legend mt-6 text-neon">{author.sign}</p>
       </div>
 
       <ExternalButton action={support} />

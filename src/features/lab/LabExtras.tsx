@@ -8,6 +8,8 @@ import { Screen } from '@/ui/CityStage';
 import { ExternalButton } from '@/ui/ExternalButton';
 import { Lamp, MetalPanel } from '@/ui/MetalPanel';
 import { Legend } from '@/ui/Plate';
+import { AuthorLine, AuthorNote } from '@/ui/AuthorNote';
+import { author } from '@/content/author';
 import { haptics } from '@/lib/telegram';
 import { cn } from '@/lib/cn';
 
@@ -56,6 +58,14 @@ export function EpiphanyScreen() {
         </ul>
 
         <p className="mt-5 text-base text-ink">{epiphany.because}</p>
+
+        {/* Как он дошёл до этой мысли. Epiphany Bridge: сначала во что верил,
+            потом что случилось, и только потом вывод. */}
+        <AuthorNote className="mt-7">
+          {author.epiphany.map((line) => (
+            <AuthorLine key={line}>{line}</AuthorLine>
+          ))}
+        </AuthorNote>
 
         <div className="mt-8 space-y-2">
           {epiphany.questions.map((q, i) => (
@@ -309,6 +319,22 @@ export function MoneyScreen() {
             </li>
           ))}
         </ul>
+
+        {/*
+          САМАЯ ВАЖНАЯ РЕПЛИКА ВОРОНКИ. Она отвечает на вопрос, который иначе
+          повиснет: если самое сильное было про аудиторию, почему продают
+          посадочную. Ответ денежный, и он подтверждён личными чеками автора,
+          а не рассуждением.
+        */}
+        <AuthorNote className="mt-8">
+          {author.money.map((line) => (
+            <AuthorLine key={line}>{line}</AuthorLine>
+          ))}
+        </AuthorNote>
+
+        <p className="mt-5 font-display text-lead font-semibold uppercase leading-snug text-neon">
+          {author.moneyLead}
+        </p>
 
         <div className="mt-7 space-y-2">
           {moneyBridge.closing.map((line) => (
