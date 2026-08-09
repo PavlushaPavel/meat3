@@ -14,6 +14,7 @@ import { ScenePanel, Screen } from '@/ui/CityStage';
 import { Lamp, MetalPanel } from '@/ui/MetalPanel';
 import { Legend, Plate } from '@/ui/Plate';
 import { haptics } from '@/lib/telegram';
+import { track } from '@/lib/analytics';
 import { cn } from '@/lib/cn';
 import { Vials } from './Vials';
 
@@ -204,7 +205,10 @@ export function VerdictScreen() {
   useEffect(() => {
     if (passed) haptics.success();
     else haptics.error();
-  }, [passed]);
+    // Исход контроля — вторая по важности точка после отвала: она показывает,
+    // сколько людей упирается в допуск и сколько после этого возвращается.
+    track('quiz', { result: passed ? 'passed' : 'failed', lives });
+  }, [passed, lives]);
 
   if (passed) {
     return (

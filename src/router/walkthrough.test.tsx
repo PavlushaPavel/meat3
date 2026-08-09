@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '@/App';
 import { buyers } from '@/content/buyers';
 import { blameStamp, chatSkip } from '@/content/chat';
@@ -12,7 +12,16 @@ import { catharsisIntro, catharsisLabels, landingDemo, promisesScreen } from '@/
 import { author } from '@/content/author';
 import { QUESTIONS_PER_RUN, quizBank } from '@/content/quizBanks';
 import { longread1, longread2, longread3, longread4 } from '@/content/longreads';
-import { checkout, offer } from '@/content/offer';
+import {
+  checkout,
+  guarantee,
+  nextStep,
+  objections,
+  offer,
+  offerStack,
+  support,
+  urgency,
+} from '@/content/offer';
 import { quizIntro, quizPassed } from '@/content/quiz';
 import { cityExit, districtChoice, map1, map2, mapFinal, townIntro, zoomOut } from '@/content/town';
 import { video1, video1Outro, video2, video3, videoEmptyLabel } from '@/content/videos';
@@ -356,6 +365,76 @@ describe('автор', () => {
     render(<App />);
 
     expect(screen.getAllByText(author.mark).length).toBeGreaterThan(0);
+  });
+});
+
+describe('аналитика', () => {
+  /**
+   * Аналитика не имеет права ломать прохождение. Проверяется именно это: без
+   * настроенного адреса она молчит, а не падает и не задерживает переходы.
+   */
+  it('без настроенного адреса не делает ни одного запроса', () => {
+    const beacon = vi.fn(() => true);
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    Object.defineProperty(navigator, 'sendBeacon', { value: beacon, configurable: true });
+
+    useFunnel.setState({ step: 'lab', district: 'direct' });
+    render(<App />);
+
+    expect(beacon).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('оффер собран по правилам продажи', () => {
+  /**
+   * Пять блоков, каждый из которых чинит найденное в разборе: состав под
+   * ценой, снятие риска, настоящая причина собрать сейчас, посев следующей
+   * ступени и внешние возражения ДО цены.
+   */
+  beforeEach(() => {
+    useFunnel.setState({ step: 'offer', district: 'direct' });
+  });
+
+  it('цена стоит рядом с составом, а не голой', () => {
+    render(<App />);
+
+    expect(screen.getByText(offer.price)).toBeDefined();
+    expect(screen.getByText(offerStack.title)).toBeDefined();
+    expect(screen.getByText(offerStack.items[0].text)).toBeDefined();
+  });
+
+  it('риск снят и причина собрать сейчас названа', () => {
+    render(<App />);
+
+    expect(screen.getByText(guarantee.text)).toBeDefined();
+    expect(screen.getByText(urgency.blocks[0])).toBeDefined();
+  });
+
+  it('финал не закрывает дверь: следующая ступень упомянута', () => {
+    render(<App />);
+
+    expect(screen.getByText(nextStep.blocks[1])).toBeDefined();
+  });
+
+  it('поддержки-заглушки в финале нет', () => {
+    render(<App />);
+
+    // Пунктирная неактивная кнопка последним, что видит человек после решения
+    // о покупке, — плохой финал. Без ссылки её не должно быть вовсе.
+    expect(screen.queryByText(support.label)).toBeNull();
+  });
+
+  it('внешние возражения сняты ДО экрана с ценой', () => {
+    cleanup();
+    useFunnel.setState({ step: 'long4', district: 'direct' });
+    render(<App />);
+
+    for (const o of objections.items) {
+      expect(screen.getByText(o.claim)).toBeDefined();
+    }
   });
 });
 

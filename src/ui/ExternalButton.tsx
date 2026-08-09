@@ -2,6 +2,7 @@ import type { ExternalAction } from '@/content/types';
 import { externalUrl } from '@/lib/env';
 import { openLink } from '@/lib/telegram';
 import { cn } from '@/lib/cn';
+import { track } from '@/lib/analytics';
 
 /**
  * Кнопка на внешний ресурс: ассистент, оплата, поддержка.
@@ -44,7 +45,10 @@ export function ExternalButton({
   return (
     <button
       type="button"
-      onClick={() => openLink(url)}
+      onClick={() => {
+        track('external', { target: action.envVar });
+        openLink(url);
+      }}
       className={cn(
         'flex min-h-14 w-full items-center justify-between gap-3 rounded-plate bg-hazard px-5 py-3 font-display text-lg font-semibold uppercase tracking-wide text-on-hazard shadow-[0_3px_0_var(--color-hazard-deep)] transition-transform duration-150 active:translate-y-px',
         className,

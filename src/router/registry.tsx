@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
-import { longread2, longread3, longread4 } from '@/content/longreads';
+import { longread2, longread3 } from '@/content/longreads';
 import { Long1Screen } from '@/features/longread/Long1Screen';
+import { Long4Screen } from '@/features/longread/Long4Screen';
 import type { StepKey } from './flow';
 
 import { TownScreen } from '@/features/town/TownScreen';
@@ -82,6 +83,7 @@ export const SCREENS: Record<StepKey, () => ReactElement> = {
   catharsis: () => <CatharsisScreen />,
   mapfinal: () => <MapFinalScreen />,
   exit: () => <ExitScreen />,
-  long4: () => <LongreadScreen content={longread4} />,
+  // Со снятием трёх внешних возражений — до экрана с ценой.
+  long4: () => <Long4Screen />,
   offer: () => <OfferScreen />,
 };

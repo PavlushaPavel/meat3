@@ -6,6 +6,7 @@ import { Button } from '@/ui/Button';
 import { Screen } from '@/ui/CityStage';
 import { Legend } from '@/ui/Plate';
 import { haptics } from '@/lib/telegram';
+import { track } from '@/lib/analytics';
 import { cn } from '@/lib/cn';
 
 /**
@@ -28,6 +29,7 @@ export function DistrictScreen() {
   const pick = (id: DistrictId) => {
     haptics.select();
     chooseDistrict(id);
+    track('district', { district: id });
   };
 
   return (

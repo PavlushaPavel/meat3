@@ -320,6 +320,24 @@ export function MoneyScreen() {
           ))}
         </ul>
 
+        {/* Мост. Прямой ответ на вопрос, который иначе повиснет: если самое
+            сильное было про аудиторию, почему продают посадочную. */}
+        <div className="mt-8 border border-line bg-scene-deep/60 p-4">
+          <h2 className="font-display text-lead font-semibold uppercase leading-snug text-ink">
+            {moneyBridge.bridge.title}
+          </h2>
+          <div className="mt-3 space-y-2">
+            {moneyBridge.bridge.blocks.map((line) => (
+              <p key={line} className="text-base text-ink-dim">
+                {line}
+              </p>
+            ))}
+          </div>
+          <p className="mt-4 font-display text-lead font-semibold uppercase leading-snug text-neon">
+            {moneyBridge.bridge.lead}
+          </p>
+        </div>
+
         {/*
           САМАЯ ВАЖНАЯ РЕПЛИКА ВОРОНКИ. Она отвечает на вопрос, который иначе
           повиснет: если самое сильное было про аудиторию, почему продают

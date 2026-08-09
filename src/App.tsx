@@ -3,6 +3,8 @@ import { SCREENS } from '@/router/registry';
 import { actOfStep } from '@/router/flow';
 import { useFunnel } from '@/store/funnel';
 import { initTelegram } from '@/lib/telegram';
+import { track } from '@/lib/analytics';
+import { stepIndex } from '@/router/flow';
 import { CityStage } from '@/ui/CityStage';
 import { DebugBar } from '@/ui/DebugBar';
 import { isDebugEnabled } from '@/lib/debug';
@@ -38,6 +40,13 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [step]);
+
+  // Каждый показ экрана — событие. Из них и собирается воронка отвала: без
+  // неё непонятно, на каком из тридцати с лишним шагов теряются люди.
+  const district = useFunnel((s) => s.district);
+  useEffect(() => {
+    track('step', { step, index: stepIndex(step) + 1, district: district ?? '' });
+  }, [step, district]);
 
   return (
     <>

@@ -1,21 +1,41 @@
-import { checkout, finalThought, offer, support } from '@/content/offer';
+import {
+  checkout,
+  finalThought,
+  guarantee,
+  nextStep,
+  offer,
+  offerStack,
+  support,
+  urgency,
+} from '@/content/offer';
+import { author } from '@/content/author';
+import { externalUrl } from '@/lib/env';
 import { ScenePanel, Screen } from '@/ui/CityStage';
 import { ExternalButton } from '@/ui/ExternalButton';
 import { MetalPanel } from '@/ui/MetalPanel';
 import { Legend, Plate } from '@/ui/Plate';
-import { author } from '@/content/author';
 
 /**
- * Шаг 25. Продажа и финальная мысль. Последний экран воронки.
+ * Шаг 31. Продажа и финальная мысль. Последний экран воронки.
  *
- * ЧТО ПРОДАЁМ. Не доступ в лабораторию — человек уже прошёл её насквозь
- * бесплатно. Продаём собственную сборочную линию: там показали, здесь ставишь
- * у себя (docs/SPEC.md §4 правило 7).
+ * ПОРЯДОК БЛОКОВ НЕ СЛУЧАЕН: состав → цена → снятие риска → причина собрать
+ * сейчас → действие. Цена, названная до состава, висит голой и её не с чем
+ * сравнить; гарантия сразу после цены снимает возражение ровно в тот момент,
+ * когда оно возникает.
  *
- * Единственная цифра на экране — 3 990 ₽. Ни отзывов, ни количества учеников,
- * ни обещаний результата: подтверждать их нечем (PRODUCT.md, Evidence on Hand).
+ * ФИНАЛ НЕ ЗАКРЫВАЕТ ДВЕРЬ. Практикум — первая платная ступень, а не вершина:
+ * дальше в боте продаётся система целиком. Поэтому после действия идёт посев
+ * следующей ступени — упоминанием, не продажей.
+ *
+ * Внешние возражения сняты экраном раньше (`long4`): на экране с ценой они
+ * конкурировали бы с решением о покупке.
  */
 export function OfferScreen() {
+  // Поддержка показывается, только если ссылка есть. Неактивный пунктир
+  // последним, что видит человек после решения о покупке, — плохой финал;
+  // писать в поддержку он в любом случае пойдёт в бот, из которого пришёл.
+  const hasSupport = externalUrl(support.envVar) !== '';
+
   return (
     <Screen className="gap-7 py-8">
       <div>
@@ -45,6 +65,20 @@ export function OfferScreen() {
         imageClassName="object-[50%_54%]"
       />
 
+      {/* Состав. Тот же список, что экраном раньше пугал как «техническая
+          херня», — здесь он снимается по пунктам. */}
+      <div>
+        <Legend className="text-hazard">{offerStack.title}</Legend>
+        <ol className="mt-3 space-y-2">
+          {offerStack.items.map((item) => (
+            <li key={item.code} className="flex gap-3 rounded-plate border border-line p-3.5">
+              <span className="font-mono text-small text-neon">{item.code}</span>
+              <span className="text-base leading-snug text-ink">{item.text}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+
       <MetalPanel rivets className="p-5">
         <div className="space-y-2">
           {offer.not.map((line) => (
@@ -61,6 +95,38 @@ export function OfferScreen() {
 
         <ExternalButton action={checkout} className="mt-5" />
       </MetalPanel>
+
+      {/* Риск на авторе. Снимает возражение ровно там, где оно возникает. */}
+      <div className="border-l-2 border-neon/60 pl-4">
+        <Legend className="text-neon">{guarantee.title}</Legend>
+        <p className="mt-2 text-base leading-relaxed text-ink">{guarantee.text}</p>
+      </div>
+
+      {/* Причина собрать сейчас — настоящая, а не выдуманный дедлайн. */}
+      <div>
+        <h2 className="font-display text-lead font-semibold uppercase leading-snug">
+          {urgency.title}
+        </h2>
+        <div className="mt-3 space-y-2">
+          {urgency.blocks.map((line) => (
+            <p key={line} className="text-base text-ink-dim">
+              {line}
+            </p>
+          ))}
+        </div>
+      </div>
+
+      {/* Посев следующей ступени. Упоминание, а не продажа: продаёт бот. */}
+      <div className="rounded-panel border border-dashed border-line p-4">
+        <Legend>{nextStep.legend}</Legend>
+        <div className="mt-2 space-y-2">
+          {nextStep.blocks.map((line) => (
+            <p key={line} className="text-small text-ink-dim">
+              {line}
+            </p>
+          ))}
+        </div>
+      </div>
 
       {/* Финальная мысль: круг с первым экраном замыкается. */}
       <div className="border-t border-line pt-7">
@@ -99,11 +165,10 @@ export function OfferScreen() {
           {finalThought.closing}
         </p>
 
-        {/* Подпись. Последнее слово в воронке принадлежит человеку, а не миру. */}
         <p className="legend mt-6 text-neon">{author.sign}</p>
       </div>
 
-      <ExternalButton action={support} />
+      {hasSupport && <ExternalButton action={support} />}
     </Screen>
   );
 }
